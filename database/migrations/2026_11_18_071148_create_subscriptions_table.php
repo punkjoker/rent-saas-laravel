@@ -9,41 +9,52 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('subscriptions', function (Blueprint $table) {
+        Schema::create('subscription_payments', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('landlord_id')
                 ->constrained('landlords')
                 ->cascadeOnDelete();
 
-            $table->foreignId('plan_id')
-                ->nullable()
-                ->constrained('subscription_plans')
-                ->nullOnDelete();
+            $table->foreignId('subscription_id')
+                ->constrained('subscriptions')
+                ->cascadeOnDelete();
 
-            $table->dateTime('starts_at');
-            $table->dateTime('ends_at')->nullable();
+            $table->string('provider', 30)->default('mpesa');
 
-            $table->dateTime('trial_ends_at')->nullable();
+            $table->string('phone', 30)->nullable();
 
-            $table->string('status', 30)->default('trial');
+            $table->decimal('amount', 12, 2);
 
-            $table->decimal('amount_paid', 12, 2)->default(0);
+            $table->string('currency', 3)->default('KES');
 
-            $table->string('payment_reference')->nullable();
-            $table->string('payment_method', 50)->nullable();
+            $table->string('account_reference')->nullable();
 
-            $table->dateTime('last_payment_at')->nullable();
+            $table->string('checkout_request_id')->nullable()->unique();
+
+            $table->string('merchant_request_id')->nullable();
+
+            $table->string('mpesa_receipt_number')->nullable()->unique();
+
+            $table->string('status', 30)->default('pending');
+
+            $table->string('result_code')->nullable();
+
+            $table->text('result_description')->nullable();
+
+            $table->json('callback_payload')->nullable();
+
+            $table->dateTime('paid_at')->nullable();
 
             $table->timestamps();
 
             $table->index(['landlord_id', 'status']);
-            $table->index(['status', 'ends_at']);
+            $table->index(['subscription_id', 'status']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('subscriptions');
+        Schema::dropIfExists('subscription_payments');
     }
 };

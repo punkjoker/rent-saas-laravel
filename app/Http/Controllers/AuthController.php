@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Landlord;
 use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -54,13 +55,18 @@ class AuthController extends Controller
                 'is_active' => true,
             ]);
 
-            // 3. Automatically activate a 14-day free trial.
+            // 3. Create a subscription using the configured free-trial plan.
+            $trialPlan = SubscriptionPlan::where(
+                'slug',
+                'free-trial'
+            )->firstOrFail();
+
             $trialStart = now();
             $trialEnd = $trialStart->copy()->addDays(14);
 
             Subscription::create([
                 'landlord_id' => $landlord->id,
-                'plan_id' => null,
+                'plan_id' => $trialPlan->id,
                 'starts_at' => $trialStart,
                 'ends_at' => $trialEnd,
                 'trial_ends_at' => $trialEnd,

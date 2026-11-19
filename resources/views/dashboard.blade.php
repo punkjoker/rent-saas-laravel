@@ -271,7 +271,9 @@
             ◫ Dashboard
         </a>
 
-        <a href="#" class="nav-link">⌂ Properties</a>
+        <a href="{{ route('properties.index') }}" class="nav-link">
+    ⌂ Properties
+</a>
         <a href="#" class="nav-link">♙ Tenants</a>
         <a href="#" class="nav-link">▣ Rent Payments</a>
         <a href="#" class="nav-link">◈ Deposits</a>

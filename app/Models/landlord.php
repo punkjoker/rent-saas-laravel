@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Models;
@@ -40,6 +39,11 @@ class Landlord extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function subscriptionPayments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class);
     }
 
     public function activeSubscription()
