@@ -274,7 +274,14 @@
         <a href="{{ route('properties.index') }}" class="nav-link">
     ⌂ Properties
 </a>
-        <a href="#" class="nav-link">♙ Tenants</a>
+        <a href="{{ route('tenants.index') }}" class="nav-link">
+    ♙ Tenants
+</a>
+<a href="{{ route('tenancies.index') }}"
+   class="nav-link {{ request()->routeIs('tenancies.*') ? 'active' : '' }}">
+    <i class="fas fa-file-contract"></i>
+    <span>♙Tenancies</span>
+</a>
         <a href="#" class="nav-link">▣ Rent Payments</a>
         <a href="#" class="nav-link">◈ Deposits</a>
         <a href="#" class="nav-link">⚡ Monthly Bills</a>

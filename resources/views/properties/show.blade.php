@@ -160,6 +160,7 @@
                 <thead>
                     <tr>
                         <th>House Number</th>
+                        <th>Current Tenant</th>
                         <th>Unit Type</th>
                         <th>Monthly Rent</th>
                         <th>Deposit</th>
@@ -175,6 +176,23 @@
 
                         <tr>
                             <td><strong>{{ $unit->unit_number }}</strong></td>
+
+                            <td>
+                                @if($unit->currentTenancy?->tenant)
+                                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                        <strong>{{ $unit->currentTenancy->tenant->full_name }}</strong>
+                                        <a href="{{ route('tenants.show', $unit->currentTenancy->tenant) }}"
+                                           class="btn btn-secondary"
+                                           style="padding:7px 10px;">
+                                            View
+                                        </a>
+                                    </div>
+                                @elseif($unit->status === 'occupied')
+                                    Tenant details unavailable
+                                @else
+                                    —
+                                @endif
+                            </td>
 
                             <td>{{ $unit->unit_type ?: 'Not specified' }}</td>
 

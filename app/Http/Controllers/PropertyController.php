@@ -154,14 +154,21 @@ class PropertyController extends Controller
             404
         );
 
+        $unitNumberSuffixStart = strlen($property->unit_prefix ?? '') + 1;
+
         $units = $property->units()
+            ->with('currentTenancy.tenant')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $query->where('unit_number', 'like', '%' . $request->search . '%');
             })
             ->when($request->filled('status'), function ($query) use ($request) {
                 $query->where('status', $request->status);
             })
-            ->orderBy('unit_number')
+            ->orderByRaw(
+                'CAST(SUBSTRING(unit_number, ?) AS UNSIGNED) ASC',
+                [$unitNumberSuffixStart]
+            )
+            ->orderBy('unit_number', 'asc')
             ->paginate(15)
             ->withQueryString();
 

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Unit extends Model
 {
@@ -30,5 +32,17 @@ class Unit extends Model
     public function property(): BelongsTo
     {
         return $this->belongsTo(Property::class);
+    }
+
+    public function tenancies(): HasMany
+    {
+        return $this->hasMany(Tenancy::class);
+    }
+
+    public function currentTenancy(): HasOne
+    {
+        return $this->hasOne(Tenancy::class)
+            ->where('status', 'active')
+            ->latestOfMany();
     }
 }

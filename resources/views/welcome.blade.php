@@ -413,6 +413,25 @@
             padding: 14px;
         }
 
+
+        /* PRICING SECTION */
+        .pricing-section { padding: 90px 0; background: #f7faf8; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; align-items: stretch; }
+        .pricing-card { position: relative; background: #fff; border: 1px solid #e2ebe5; border-radius: 16px; padding: 27px 23px; display: flex; flex-direction: column; box-shadow: 0 8px 25px rgba(20,35,31,.035); }
+        .pricing-card.popular { border: 2px solid var(--primary); box-shadow: 0 15px 35px rgba(23,107,85,.10); }
+        .popular-tag { position: absolute; top: -13px; right: 18px; background: var(--primary); color: #fff; border-radius: 20px; padding: 5px 12px; font-size: 10px; font-weight: 800; letter-spacing: .4px; }
+        .pricing-card h3 { font-size: 19px; margin-bottom: 8px; }
+        .pricing-price { color: var(--primary); font-size: 29px; font-weight: 800; letter-spacing: -1px; margin: 9px 0 2px; }
+        .pricing-price small { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0; }
+        .pricing-limit { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+        .pricing-features { list-style: none; margin: 0 0 24px; padding: 0; flex: 1; }
+        .pricing-features li { font-size: 13px; color: #53615b; padding: 7px 0; border-bottom: 1px solid #f0f3f1; }
+        .pricing-features li::before { content: '✓'; color: var(--primary); font-weight: 800; margin-right: 8px; }
+        .pricing-card .btn { width: 100%; }
+        .pricing-footnote { text-align: center; color: var(--muted); font-size: 13px; margin-top: 25px; }
+        .selected-plan-summary { background: #edf7f1; color: var(--primary-dark); padding: 12px 14px; border-radius: 9px; font-size: 13px; margin: 0 0 20px; }
+        @media(max-width: 650px) { .pricing-section { padding: 65px 0; } }
+
         .auth-note {
             font-size: 12px;
             text-align: center;
@@ -540,6 +559,7 @@
 
         <nav class="nav-links">
             <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
             <a href="#about">About</a>
             <a href="#register">Get Started</a>
         </nav>
@@ -700,6 +720,49 @@
 </section>
 
 
+<!-- PRICING SECTION -->
+<section class="pricing-section" id="pricing">
+    <div class="container">
+        <div class="section-heading">
+            <span class="eyebrow">Simple, transparent pricing</span>
+            <h2>Choose a plan that grows with you</h2>
+            <p>Every plan includes unlimited properties. Choose based on the number of active tenants you manage.</p>
+        </div>
+
+        <div class="pricing-grid">
+            @forelse($plans as $plan)
+                <article class="pricing-card {{ $plan->slug === 'professional' ? 'popular' : '' }}">
+                    @if($plan->slug === 'professional')
+                        <span class="popular-tag">MOST POPULAR</span>
+                    @endif
+                    <h3>{{ $plan->name }}</h3>
+                    <div class="pricing-price">KES {{ number_format((float) $plan->price) }}<small> / month</small></div>
+                    <p class="pricing-limit">
+                        {{ $plan->tenant_limit === null ? 'Unlimited active tenants' : number_format($plan->tenant_limit) . ' active tenants' }}
+                    </p>
+                    <ul class="pricing-features">
+                        <li>Unlimited properties</li>
+                        <li>Tenant and occupancy management</li>
+                        <li>Rent and payment tracking</li>
+                        <li>Deposits and monthly charges</li>
+                        <li>Reports and receipts</li>
+                    </ul>
+                    <a href="#register"
+                       class="btn {{ $plan->slug === 'professional' ? 'btn-primary' : 'btn-outline' }} choose-plan"
+                       data-plan-id="{{ $plan->id }}"
+                       data-plan-name="{{ $plan->name }}">
+                        Choose {{ $plan->name }}
+                    </a>
+                </article>
+            @empty
+                <p class="alert alert-error">Pricing plans are currently unavailable. Please try again later.</p>
+            @endforelse
+        </div>
+        <p class="pricing-footnote">Start with a 14-day free trial for up to 20 active tenants. No payment is required during registration.</p>
+    </div>
+</section>
+
+
 <!-- AUTHENTICATION SECTION -->
 
 <section class="auth-section" id="register">
@@ -746,8 +809,16 @@
                     Register as a landlord and start managing your properties.
                 </p>
 
+                <div id="selectedPlanSummary" class="selected-plan-summary">
+                    Choose a package from the Pricing section. Your account will first start on the 14-day free trial.
+                </div>
+
                 <form method="POST" action="{{ route('register') }}">
                     @csrf
+                    <input type="hidden" name="selected_plan_id" id="selected_plan_id" value="{{ old('selected_plan_id', optional($plans->first())->id) }}">
+                    @error('selected_plan_id')
+                        <span class="form-error">{{ $message }}</span>
+                    @enderror
 
                     <div class="form-group">
                         <label>Full Name</label>
@@ -938,6 +1009,35 @@
     </div>
 
 </footer>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const planInput = document.getElementById('selected_plan_id');
+    const summary = document.getElementById('selectedPlanSummary');
+    const planButtons = document.querySelectorAll('.choose-plan');
+
+    function selectPlan(id, name) {
+        if (planInput) planInput.value = id;
+        if (summary) {
+            summary.textContent = name + ' selected. Your account starts with a 14-day free trial for up to 20 active tenants. No payment is taken now.';
+        }
+    }
+
+    planButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            selectPlan(this.dataset.planId, this.dataset.planName);
+        });
+    });
+
+    const selectedButton = Array.from(planButtons).find(function (button) {
+        return button.dataset.planId === (planInput ? planInput.value : '');
+    });
+    if (selectedButton) {
+        selectPlan(selectedButton.dataset.planId, selectedButton.dataset.planName);
+    }
+});
+</script>
 
 </body>
 </html>

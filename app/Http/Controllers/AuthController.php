@@ -14,17 +14,18 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Display the public homepage.
-     */
     public function home()
     {
-        return view('welcome');
+        $plans = SubscriptionPlan::where('is_active', true)
+            ->where('slug', '!=', 'free-trial')
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('welcome', compact('plans'));
     }
 
     /**
-     * Register a new landlord and automatically activate
-     * their 14-day free trial.
+     * Register landlord and start the 14-day trial.
      */
     public function register(Request $request)
     {
@@ -34,18 +35,54 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'phone' => 'required|string|max:30',
             'password' => 'required|string|min:8|confirmed',
+
+            'selected_plan_id' => [
+                'required',
+                'integer',
+                'exists:subscription_plans,id',
+            ],
         ]);
 
         $user = DB::transaction(function () use ($validated) {
 
-            // 1. Create landlord login account.
+            // Find the landlord's selected paid package.
+            $selectedPlan = SubscriptionPlan::where(
+                'id',
+                $validated['selected_plan_id']
+            )
+                ->where('is_active', true)
+                ->where('slug', '!=', 'free-trial')
+                ->first();
+
+            if (!$selectedPlan) {
+                throw ValidationException::withMessages([
+                    'selected_plan_id' =>
+                        'Please select a valid subscription package.',
+                ]);
+            }
+
+            // Get the configured free trial package.
+            $trialPlan = SubscriptionPlan::where(
+                'slug',
+                'free-trial'
+            )
+                ->where('is_active', true)
+                ->first();
+
+            if (!$trialPlan) {
+                throw new \RuntimeException(
+                    'Free trial package has not been configured.'
+                );
+            }
+
+            // Create landlord login.
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
             ]);
 
-            // 2. Create landlord business profile.
+            // Create landlord profile.
             $landlord = Landlord::create([
                 'user_id' => $user->id,
                 'business_name' => $validated['business_name'],
@@ -55,21 +92,24 @@ class AuthController extends Controller
                 'is_active' => true,
             ]);
 
-            // 3. Create a subscription using the configured free-trial plan.
-            $trialPlan = SubscriptionPlan::where(
-                'slug',
-                'free-trial'
-            )->firstOrFail();
-
+            // Start the free trial.
             $trialStart = now();
+
             $trialEnd = $trialStart->copy()->addDays(14);
 
             Subscription::create([
                 'landlord_id' => $landlord->id,
+
+                // Current access package: Free Trial.
                 'plan_id' => $trialPlan->id,
+
+                // Package selected for future billing.
+                'selected_plan_id' => $selectedPlan->id,
+
                 'starts_at' => $trialStart,
                 'ends_at' => $trialEnd,
                 'trial_ends_at' => $trialEnd,
+
                 'status' => 'trial',
                 'amount_paid' => 0,
             ]);
@@ -77,18 +117,21 @@ class AuthController extends Controller
             return $user;
         });
 
-        // 4. Log in the newly registered landlord.
+        // Authenticate newly registered landlord.
         Auth::login($user);
 
         $request->session()->regenerate();
 
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Welcome to Pango! Your 14-day free trial has started.');
+            ->with(
+                'success',
+                'Welcome to Pango! Your 14-day free trial has started.'
+            );
     }
 
     /**
-     * Authenticate an existing landlord.
+     * Authenticate landlord.
      */
     public function login(Request $request)
     {
@@ -97,7 +140,10 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (!Auth::attempt(
+            $credentials,
+            $request->boolean('remember')
+        )) {
             throw ValidationException::withMessages([
                 'email' => 'The email or password you entered is incorrect.',
             ]);
@@ -109,7 +155,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Log out the current user.
+     * Logout landlord.
      */
     public function logout(Request $request)
     {
@@ -124,13 +170,17 @@ class AuthController extends Controller
     }
 
     /**
-     * Display the protected landlord dashboard.
+     * Display landlord dashboard.
      */
     public function dashboard()
     {
-        $user = Auth::user()->load('landlord.activeSubscription');
+        $user = Auth::user()->load(
+            'landlord.activeSubscription.plan',
+            'landlord.activeSubscription.selectedPlan'
+        );
 
         $landlord = $user->landlord;
+
         $subscription = $landlord?->activeSubscription;
 
         return view('dashboard', compact(

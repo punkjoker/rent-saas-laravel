@@ -11,6 +11,7 @@ class Subscription extends Model
     protected $fillable = [
         'landlord_id',
         'plan_id',
+        'selected_plan_id',
         'starts_at',
         'ends_at',
         'trial_ends_at',
@@ -36,10 +37,12 @@ class Subscription extends Model
 
     public function plan(): BelongsTo
     {
-        return $this->belongsTo(
-            SubscriptionPlan::class,
-            'plan_id'
-        );
+        return $this->belongsTo(SubscriptionPlan::class, 'plan_id');
+    }
+
+    public function selectedPlan(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class, 'selected_plan_id');
     }
 
     public function payments(): HasMany
