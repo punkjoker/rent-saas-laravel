@@ -8,6 +8,7 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenancyController;
+use App\Http\Controllers\RentChargeController;
 
 // Public homepage
 Route::get('/', [AuthController::class, 'home'])
@@ -103,6 +104,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tenancies/{tenancy}/end', [TenancyController::class, 'end'])
         ->whereNumber('tenancy')
         ->name('tenancies.end');
+
+    Route::get('/rent-charges/export/excel', [RentChargeController::class, 'exportExcel'])
+        ->name('rent-charges.export.excel');
+
+    Route::get('/rent-charges/export/pdf', [RentChargeController::class, 'exportPdf'])
+        ->name('rent-charges.export.pdf');
+
+    Route::get('/rent-charges', [RentChargeController::class, 'index'])
+        ->name('rent-charges.index');
+
+    Route::post('/rent-charges', [RentChargeController::class, 'store'])
+        ->name('rent-charges.store');
 });
 
 // Protected landlord dashboard

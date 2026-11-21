@@ -350,6 +350,11 @@
     <i class="fas fa-file-contract"></i>
     <span>Tenancies</span>
 </a>
+<a href="{{ route('rent-charges.index') }}"
+   class="nav-link {{ request()->routeIs('rent-charges.*') ? 'active' : '' }}">
+    <i class="fas fa-file-invoice-dollar"></i>
+    <span>Rent Charges</span>
+</a>
         <a href="#" class="nav-link">▣ Rent Payments</a>
         <a href="#" class="nav-link">◈ Deposits</a>
         <a href="#" class="nav-link">⚡ Monthly Bills</a>
