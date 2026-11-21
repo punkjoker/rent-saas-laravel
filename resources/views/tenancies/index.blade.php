@@ -11,8 +11,10 @@
         </div>
 
         <a href="{{ route('tenancies.create') }}"
-           class="btn inline-flex items-center justify-center">
-            + Create Tenancy
+           class="btn inline-flex items-center justify-center gap-2"
+           style="background:#176b55;color:#fff;padding:13px 20px;font-size:15px;box-shadow:0 6px 16px rgba(23,107,85,.22);">
+            <span aria-hidden="true" style="font-size:21px;line-height:1;">＋</span>
+            <span>Create Tenancy</span>
         </a>
     </div>
 
