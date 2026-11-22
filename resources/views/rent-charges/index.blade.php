@@ -1,5 +1,9 @@
 @extends('layouts.landlord')
 
+@section('title', 'Rent Charges')
+@section('page-heading', 'Rent Charges')
+@section('page-description', 'Enter and manage monthly rent, garbage, and water charges.')
+
 @section('content')
 
 <div class="page-card">

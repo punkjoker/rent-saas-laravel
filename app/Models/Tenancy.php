@@ -25,6 +25,7 @@ class Tenancy extends Model
         'status',
         'ended_at',
         'notes',
+        'payment_share_token_hash',
     ];
 
     protected $casts = [
@@ -59,5 +60,20 @@ class Tenancy extends Model
     public function rentCharges(): HasMany
     {
         return $this->hasMany(RentCharge::class);
+    }
+
+    public function rentPayments(): HasMany
+    {
+        return $this->hasMany(RentPayment::class);
+    }
+
+    public function rentPaymentSubmissions(): HasMany
+    {
+        return $this->hasMany(RentPaymentSubmission::class);
+    }
+
+    public function depositPayments(): HasMany
+    {
+        return $this->hasMany(DepositPayment::class);
     }
 }

@@ -212,6 +212,35 @@ class RentChargeController extends Controller
         ));
     }
 
+    public function monthlyReport(Request $request)
+    {
+        $landlordId = $this->landlordId();
+        $filters = $this->reportFilters($request, $landlordId);
+        $month = $filters['month'];
+        $propertyId = $filters['propertyId'];
+        $search = $filters['search'];
+
+        $properties = Property::where('landlord_id', $landlordId)
+            ->orderBy('property_name')
+            ->get();
+        $savedCharges = $this->savedCharges(
+            $landlordId,
+            $month,
+            $propertyId,
+            $search
+        );
+        $chargeTotals = $this->chargeTotals($savedCharges);
+
+        return view('rent-charges.report', compact(
+            'savedCharges',
+            'chargeTotals',
+            'properties',
+            'month',
+            'propertyId',
+            'search'
+        ));
+    }
+
     public function exportExcel(Request $request)
     {
         $landlordId = $this->landlordId();

@@ -66,6 +66,13 @@
     .tenant-actions {
         display: flex;
         gap: 7px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+    }
+
+    .tenant-actions .btn {
+        padding: 6px 9px;
+        font-size: 12px;
     }
 
     .empty-state {
@@ -171,6 +178,11 @@
 
                         <td>
                             <div class="tenant-actions">
+                                <a href="{{ route('payments.tenant-history', $tenant->id) }}"
+                                   class="btn btn-secondary">
+                                    History
+                                </a>
+
                                 <a href="{{ route('tenants.show', $tenant->id) }}"
                                    class="btn btn-secondary">
                                     View

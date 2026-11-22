@@ -9,6 +9,9 @@ use App\Http\Controllers\UnitController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenancyController;
 use App\Http\Controllers\RentChargeController;
+use App\Http\Controllers\RentPaymentController;
+use App\Http\Controllers\DepositController;
+use App\Http\Controllers\ExpenseController;
 
 // Public homepage
 Route::get('/', [AuthController::class, 'home'])
@@ -28,6 +31,22 @@ Route::get('/login', [AuthController::class, 'home'])
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('guest')
     ->name('login.submit');
+
+Route::get('/tenant-payments/{token}', [RentPaymentController::class, 'publicHistory'])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->middleware('throttle:30,1')
+    ->name('tenant-payments.show');
+
+Route::post('/tenant-payments/{token}', [RentPaymentController::class, 'submitPublic'])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->middleware('throttle:10,1')
+    ->name('tenant-payments.submit');
+
+Route::get('/tenant-payments/{token}/receipts/{payment}', [RentPaymentController::class, 'publicReceipt'])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->whereNumber('payment')
+    ->middleware('throttle:30,1')
+    ->name('tenant-payments.receipt');
 
 // Landlord logout
 Route::post('/logout', [AuthController::class, 'logout'])
@@ -79,6 +98,10 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('tenant')
         ->name('tenants.edit');
 
+    Route::get('/tenants/{tenant}/payment-history', [RentPaymentController::class, 'tenantHistory'])
+        ->whereNumber('tenant')
+        ->name('payments.tenant-history');
+
     Route::put('/tenants/{tenant}', [TenantController::class, 'update'])
         ->whereNumber('tenant')
         ->name('tenants.update');
@@ -116,6 +139,64 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/rent-charges', [RentChargeController::class, 'store'])
         ->name('rent-charges.store');
+
+    Route::get('/monthly-bills', [RentChargeController::class, 'monthlyReport'])
+        ->name('monthly-bills.index');
+
+    Route::get('/payments', [RentPaymentController::class, 'index'])
+        ->name('payments.index');
+
+    Route::get('/tenancies/{tenancy}/payments/create', [RentPaymentController::class, 'create'])
+        ->whereNumber('tenancy')
+        ->name('payments.create');
+
+    Route::post('/tenancies/{tenancy}/payments', [RentPaymentController::class, 'store'])
+        ->whereNumber('tenancy')
+        ->name('payments.store');
+
+    Route::get('/tenancies/{tenancy}/payments/history', [RentPaymentController::class, 'history'])
+        ->whereNumber('tenancy')
+        ->name('payments.history');
+
+    Route::post('/payment-submissions/{submission}/approve', [RentPaymentController::class, 'approve'])
+        ->whereNumber('submission')
+        ->name('payments.submissions.approve');
+
+    Route::post('/payment-submissions/{submission}/reject', [RentPaymentController::class, 'reject'])
+        ->whereNumber('submission')
+        ->name('payments.submissions.reject');
+
+    Route::post('/tenancies/{tenancy}/payment-share', [RentPaymentController::class, 'share'])
+        ->whereNumber('tenancy')
+        ->name('payments.share');
+
+    Route::delete('/tenancies/{tenancy}/payment-share', [RentPaymentController::class, 'revokeShare'])
+        ->whereNumber('tenancy')
+        ->name('payments.share.revoke');
+
+    Route::get('/deposits', [DepositController::class, 'index'])
+        ->name('deposits.index');
+
+    Route::get('/expenses', [ExpenseController::class, 'index'])
+        ->name('expenses.index');
+
+    Route::get('/expenses/create', [ExpenseController::class, 'create'])
+        ->name('expenses.create');
+
+    Route::post('/expenses', [ExpenseController::class, 'store'])
+        ->name('expenses.store');
+
+    Route::get('/tenancies/{tenancy}/deposits/create', [DepositController::class, 'create'])
+        ->whereNumber('tenancy')
+        ->name('deposits.create');
+
+    Route::post('/tenancies/{tenancy}/deposits', [DepositController::class, 'store'])
+        ->whereNumber('tenancy')
+        ->name('deposits.store');
+
+    Route::get('/tenancies/{tenancy}/deposits/history', [DepositController::class, 'history'])
+        ->whereNumber('tenancy')
+        ->name('deposits.history');
 });
 
 // Protected landlord dashboard

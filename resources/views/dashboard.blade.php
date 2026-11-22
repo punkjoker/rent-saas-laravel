@@ -28,6 +28,21 @@
             position: fixed;
             inset: 0 auto 0 0;
             padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar nav {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .sidebar form {
+            flex: 0 0 auto;
         }
 
         .logo {
@@ -221,6 +236,9 @@
                 position: static;
                 width: 100%;
                 padding: 15px;
+                display: block;
+                height: auto;
+                overflow: visible;
             }
 
             .logo {
@@ -230,7 +248,9 @@
             .sidebar nav {
                 display: flex;
                 overflow-x: auto;
+                overflow-y: hidden;
                 gap: 5px;
+                flex: 0 0 auto;
             }
 
             .nav-label {
@@ -239,6 +259,7 @@
 
             .nav-link {
                 white-space: nowrap;
+                flex: 0 0 auto;
             }
 
             .main {
@@ -287,10 +308,22 @@
     <i class="fas fa-file-invoice-dollar"></i>
     <span>Rent Charges</span>
 </a>
-        <a href="#" class="nav-link">▣ Rent Payments</a>
-        <a href="#" class="nav-link">◈ Deposits</a>
-        <a href="#" class="nav-link">⚡ Monthly Bills</a>
-
+        <a href="{{ route('monthly-bills.index') }}"
+           class="nav-link {{ request()->routeIs('monthly-bills.*') ? 'active' : '' }}">
+            ⚡ Monthly Bills
+        </a>
+        <a href="{{ route('expenses.index') }}"
+           class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+            ◆ Expenses
+        </a>
+        <a href="{{ route('payments.index') }}"
+           class="nav-link {{ request()->routeIs('payments.*') ? 'active' : '' }}">
+            ▣ Rent Payments
+        </a>
+        <a href="{{ route('deposits.index') }}"
+           class="nav-link {{ request()->routeIs('deposits.*') ? 'active' : '' }}">
+            ◈ Deposits
+        </a>
         <div class="nav-label">MANAGEMENT</div>
 
         <a href="#" class="nav-link">▤ Reports</a>

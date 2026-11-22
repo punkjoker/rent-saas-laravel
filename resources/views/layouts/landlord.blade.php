@@ -29,8 +29,22 @@
             position: fixed;
             inset: 0 auto 0 0;
             padding: 30px 20px;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
             z-index: 100;
+        }
+
+        .sidebar nav {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .sidebar form {
+            flex: 0 0 auto;
         }
 
         .logo {
@@ -287,6 +301,9 @@
                 position: relative;
                 width: 100%;
                 padding: 15px;
+                display: block;
+                height: auto;
+                overflow: visible;
             }
 
             .logo {
@@ -295,7 +312,9 @@
 
             .sidebar nav {
                 display: flex;
+                flex: 0 0 auto;
                 overflow-x: auto;
+                overflow-y: hidden;
                 gap: 5px;
             }
 
@@ -305,6 +324,7 @@
 
             .nav-link {
                 white-space: nowrap;
+                flex: 0 0 auto;
             }
 
             .main {
@@ -355,10 +375,26 @@
     <i class="fas fa-file-invoice-dollar"></i>
     <span>Rent Charges</span>
 </a>
-        <a href="#" class="nav-link">▣ Rent Payments</a>
-        <a href="#" class="nav-link">◈ Deposits</a>
-        <a href="#" class="nav-link">⚡ Monthly Bills</a>
-
+        <a href="{{ route('monthly-bills.index') }}"
+           class="nav-link {{ request()->routeIs('monthly-bills.*') ? 'active' : '' }}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Monthly Bills</span>
+        </a>
+        <a href="{{ route('expenses.index') }}"
+           class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+            <i class="fas fa-receipt"></i>
+            <span>Expenses</span>
+        </a>
+        <a href="{{ route('payments.index') }}"
+           class="nav-link {{ request()->routeIs('payments.*') ? 'active' : '' }}">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Rent Payments</span>
+        </a>
+        <a href="{{ route('deposits.index') }}"
+           class="nav-link {{ request()->routeIs('deposits.*') ? 'active' : '' }}">
+            <i class="fas fa-piggy-bank"></i>
+            <span>Deposits</span>
+        </a>
         <div class="nav-label">MANAGEMENT</div>
 
         <a href="#" class="nav-link">▤ Reports</a>
