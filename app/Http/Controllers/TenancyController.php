@@ -7,7 +7,10 @@ use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Tenancy;
 use App\Models\Unit;
+use App\Services\TenancyReconciliationCalculator;
 use App\Services\TenantLimitService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -109,30 +112,16 @@ class TenancyController extends Controller
         $this->synchronizeStatuses($landlordId);
 
         $query = Tenancy::with(['tenant', 'property', 'unit'])
-            ->where('landlord_id', $landlordId);
+            ->where('landlord_id', $landlordId)
+            ->whereIn('status', ['active', 'upcoming']);
 
         if ($request->filled('status') &&
-            in_array($request->status, ['active', 'upcoming', 'ended'], true)) {
+            in_array($request->status, ['active', 'upcoming'], true)) {
             $query->where('status', $request->status);
         }
 
         if ($request->filled('search')) {
-            $search = trim($request->search);
-
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('tenant', function ($tenantQuery) use ($search) {
-                    $tenantQuery->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                })
-                ->orWhereHas('property', function ($propertyQuery) use ($search) {
-                    $propertyQuery->where('property_name', 'like', "%{$search}%");
-                })
-                ->orWhereHas('unit', function ($unitQuery) use ($search) {
-                    $unitQuery->where('unit_number', 'like', "%{$search}%");
-                });
-            });
+            $this->applySearch($query, trim($request->search));
         }
 
         $tenancies = $query->latest('start_date')
@@ -151,6 +140,45 @@ class TenancyController extends Controller
         ];
 
         return view('tenancies.index', compact('tenancies', 'stats'));
+    }
+
+    public function vacated(Request $request)
+    {
+        $landlordId = $this->landlordId();
+
+        $this->synchronizeStatuses($landlordId);
+
+        $query = Tenancy::with(['tenant', 'property', 'unit'])
+            ->where('landlord_id', $landlordId)
+            ->where('status', 'ended');
+
+        if ($request->filled('search')) {
+            $this->applySearch($query, trim($request->search));
+        }
+
+        $tenancies = $query->latest('ended_at')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('tenancies.vacated', compact('tenancies'));
+    }
+
+    private function applySearch(Builder $query, string $search): void
+    {
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('tenant', function ($tenantQuery) use ($search) {
+                $tenantQuery->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            })
+            ->orWhereHas('property', function ($propertyQuery) use ($search) {
+                $propertyQuery->where('property_name', 'like', "%{$search}%");
+            })
+            ->orWhereHas('unit', function ($unitQuery) use ($search) {
+                $unitQuery->where('unit_number', 'like', "%{$search}%");
+            });
+        });
     }
 
     public function create()
@@ -347,7 +375,130 @@ class TenancyController extends Controller
         });
 
         return redirect()
-            ->route('tenancies.show', $tenancy)
-            ->with('success', 'Tenancy ended successfully. The tenancy history has been preserved.');
+            ->route('tenancies.vacated')
+            ->with('success', 'Tenancy vacated successfully. Its history is available in the Vacated Tenancies section.');
+    }
+
+    public function reconciliation(
+        int $tenancy,
+        TenancyReconciliationCalculator $calculator
+    ) {
+        $record = $this->ownedTenancy($tenancy);
+        abort_unless($record->status === 'ended', 404);
+
+        return view(
+            'tenancies.reconcile',
+            $this->reconciliationDetails($record, $calculator)
+        );
+    }
+
+    public function saveReconciliation(Request $request, int $tenancy)
+    {
+        $record = $this->ownedTenancy($tenancy);
+        abort_unless($record->status === 'ended', 404);
+
+        $validated = $request->validate([
+            'damages' => ['nullable', 'array', 'max:50'],
+            'damages.*.description' => ['required', 'string', 'max:255'],
+            'damages.*.amount' => [
+                'required',
+                'numeric',
+                'decimal:0,2',
+                'gt:0',
+                'max:9999999999.99',
+            ],
+        ]);
+
+        DB::transaction(function () use ($record, $validated) {
+            $lockedTenancy = Tenancy::where('landlord_id', $record->landlord_id)
+                ->lockForUpdate()
+                ->findOrFail($record->id);
+            $reconciliation = $lockedTenancy->reconciliation()->firstOrCreate([]);
+
+            $reconciliation->damages()->delete();
+            $reconciliation->damages()->createMany($validated['damages'] ?? []);
+        });
+
+        return redirect()
+            ->route('tenancies.reconciliation', $record->id)
+            ->with('success', 'Reconciliation saved. The settlement balance has been updated.');
+    }
+
+    public function finalizeReconciliation(int $tenancy)
+    {
+        $record = $this->ownedTenancy($tenancy);
+        abort_unless($record->status === 'ended', 404);
+
+        DB::transaction(function () use ($record) {
+            $lockedTenancy = Tenancy::where('landlord_id', $record->landlord_id)
+                ->lockForUpdate()
+                ->findOrFail($record->id);
+            $reconciliation = $lockedTenancy->reconciliation()->firstOrCreate([]);
+
+            if (!$reconciliation->finalized_at) {
+                $reconciliation->update(['finalized_at' => now()]);
+            }
+        });
+
+        return redirect()
+            ->route('tenancies.reconciliation.final', $record->id)
+            ->with('success', 'Reconciliation marked as final. You can still edit it later.');
+    }
+
+    public function finalReconciliation(
+        int $tenancy,
+        TenancyReconciliationCalculator $calculator
+    ) {
+        $record = $this->ownedTenancy($tenancy);
+        abort_unless($record->status === 'ended', 404);
+
+        return view(
+            'tenancies.final',
+            $this->reconciliationDetails($record, $calculator)
+        );
+    }
+
+    private function reconciliationDetails(
+        Tenancy $tenancy,
+        TenancyReconciliationCalculator $calculator
+    ): array {
+        $asOfDate = Carbon::parse(
+            $tenancy->ended_at ?? $tenancy->lease_end_date ?? now()->toDateString()
+        );
+        $charges = $tenancy->rentCharges()
+            ->where('month_year', '<=', $asOfDate->format('Y-m'))
+            ->orderBy('month_year')
+            ->get();
+        $payments = $tenancy->rentPayments()
+            ->where('paid_at', '<=', $asOfDate->copy()->endOfDay())
+            ->orderBy('paid_at')
+            ->orderBy('id')
+            ->get();
+        $depositPayments = $tenancy->depositPayments()
+            ->where('paid_at', '<=', $asOfDate->copy()->endOfDay())
+            ->orderBy('paid_at')
+            ->orderBy('id')
+            ->get();
+        $reconciliation = $tenancy->reconciliation()
+            ->with('damages')
+            ->first();
+        $damages = $reconciliation?->damages ?? collect();
+        $summary = $calculator->calculate(
+            $charges,
+            $payments,
+            $depositPayments,
+            $damages
+        );
+
+        return compact(
+            'tenancy',
+            'asOfDate',
+            'charges',
+            'payments',
+            'depositPayments',
+            'reconciliation',
+            'damages',
+            'summary'
+        );
     }
 }

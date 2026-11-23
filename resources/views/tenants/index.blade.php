@@ -205,15 +205,21 @@
                                     @if(request('search'))
                                         Try a different search term.
                                     @else
-                                        You have not registered any tenants yet.
+                                        No active or unassigned tenants are listed. Vacated tenant records remain available in Vacated Tenancies.
                                     @endif
                                 </p>
 
                                 @if(!request('search'))
-                                    <a href="{{ route('tenants.create') }}"
-                                       class="btn btn-primary">
-                                        Register Your First Tenant
-                                    </a>
+                                    <div class="flex justify-center gap-2">
+                                        <a href="{{ route('tenancies.vacated') }}"
+                                           class="btn btn-secondary">
+                                            Vacated Tenancies
+                                        </a>
+                                        <a href="{{ route('tenants.create') }}"
+                                           class="btn btn-primary">
+                                            Register Tenant
+                                        </a>
+                                    </div>
                                 @endif
                             </div>
                         </td>

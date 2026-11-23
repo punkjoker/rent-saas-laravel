@@ -546,6 +546,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/pango-glass.css') }}">
 </head>
 
 <body>

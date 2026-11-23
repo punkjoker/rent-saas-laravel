@@ -73,6 +73,7 @@ class RentPaymentController extends Controller
 
         $tenanciesQuery = Tenancy::where('landlord_id', $landlordId)
             ->whereDate('start_date', '<=', $monthEnd)
+            ->whereIn('status', ['active', 'upcoming'])
             ->with([
                 'tenant',
                 'property',
@@ -124,7 +125,9 @@ class RentPaymentController extends Controller
         });
 
         $pendingSubmissions = RentPaymentSubmission::where('status', 'pending')
-            ->whereHas('tenancy', fn ($query) => $query->where('landlord_id', $landlordId))
+            ->whereHas('tenancy', fn ($query) => $query
+                ->where('landlord_id', $landlordId)
+                ->whereIn('status', ['active', 'upcoming']))
             ->with(['tenancy.tenant', 'tenancy.property', 'tenancy.unit'])
             ->latest('transaction_date')
             ->get();

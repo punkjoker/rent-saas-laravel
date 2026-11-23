@@ -339,7 +339,9 @@
         }
     </style>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/pango-glass.css') }}">
 </head>
 
 <body>
@@ -353,28 +355,36 @@
 
         <a href="{{ route('dashboard') }}"
            class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            ◫ Dashboard
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
         </a>
 
         <a href="{{ route('properties.index') }}"
            class="nav-link {{ request()->routeIs('properties.*') || request()->routeIs('units.*') ? 'active' : '' }}">
-            ⌂ Properties
+            <i class="fas fa-building"></i>
+            <span>Properties</span>
         </a>
 
         <a href="{{ route('tenants.index') }}"
-   class="nav-link {{ request()->routeIs('tenants.*') ? 'active' : '' }}">
-    ♙ Tenants
-</a>
-<a href="{{ route('tenancies.index') }}"
-   class="nav-link {{ request()->routeIs('tenancies.*') ? 'active' : '' }}">
-    <i class="fas fa-file-contract"></i>
-    <span>Tenancies</span>
-</a>
-<a href="{{ route('rent-charges.index') }}"
-   class="nav-link {{ request()->routeIs('rent-charges.*') ? 'active' : '' }}">
-    <i class="fas fa-file-invoice-dollar"></i>
-    <span>Rent Charges</span>
-</a>
+           class="nav-link {{ request()->routeIs('tenants.*') ? 'active' : '' }}">
+            <i class="fas fa-users"></i>
+            <span>Tenants</span>
+        </a>
+        <a href="{{ route('tenancies.index') }}"
+           class="nav-link {{ request()->routeIs('tenancies.index') || request()->routeIs('tenancies.create') || request()->routeIs('tenancies.show') ? 'active' : '' }}">
+            <i class="fas fa-file-contract"></i>
+            <span>Tenancies</span>
+        </a>
+        <a href="{{ route('tenancies.vacated') }}"
+           class="nav-link {{ request()->routeIs('tenancies.vacated') || request()->routeIs('tenancies.reconciliation*') ? 'active' : '' }}">
+            <i class="fas fa-box-archive"></i>
+            <span>Vacated Tenancies</span>
+        </a>
+        <a href="{{ route('rent-charges.index') }}"
+           class="nav-link {{ request()->routeIs('rent-charges.*') ? 'active' : '' }}">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Rent Charges</span>
+        </a>
         <a href="{{ route('monthly-bills.index') }}"
            class="nav-link {{ request()->routeIs('monthly-bills.*') ? 'active' : '' }}">
             <i class="fas fa-calendar-alt"></i>
@@ -397,8 +407,15 @@
         </a>
         <div class="nav-label">MANAGEMENT</div>
 
-        <a href="#" class="nav-link">▤ Reports</a>
-        <a href="#" class="nav-link">⚙ Settings</a>
+        <a href="{{ route('reports.index') }}"
+           class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+            <i class="fas fa-chart-pie"></i>
+            <span>Reports</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-gear"></i>
+            <span>Settings</span>
+        </a>
     </nav>
 
     <form method="POST" action="{{ route('logout') }}">

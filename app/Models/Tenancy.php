@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenancy extends Model
 {
@@ -75,5 +76,10 @@ class Tenancy extends Model
     public function depositPayments(): HasMany
     {
         return $this->hasMany(DepositPayment::class);
+    }
+
+    public function reconciliation(): HasOne
+    {
+        return $this->hasOne(TenancyReconciliation::class);
     }
 }

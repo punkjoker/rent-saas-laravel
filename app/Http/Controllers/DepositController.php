@@ -35,7 +35,8 @@ class DepositController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
         ]);
         $search = trim($validated['search'] ?? '');
-        $query = Tenancy::where('landlord_id', $landlordId);
+        $query = Tenancy::where('landlord_id', $landlordId)
+            ->whereIn('status', ['active', 'upcoming']);
 
         if ($search !== '') {
             $terms = collect(preg_split('/\s+/', $search))

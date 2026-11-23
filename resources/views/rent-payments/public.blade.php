@@ -15,6 +15,7 @@
         label{display:block;font-weight:bold;font-size:14px}label input,label textarea{display:block;margin-top:6px;font-weight:normal}
         @media(max-width:600px){body{padding:12px}.card{padding:16px}th,td{font-size:13px;padding:7px}}
     </style>
+    <link rel="stylesheet" href="{{ asset('css/pango-glass.css') }}">
 </head>
 <body>
 <main>

@@ -10,12 +10,18 @@
             <p class="text-gray-500 mt-1">Manage tenant agreements and unit allocations.</p>
         </div>
 
-        <a href="{{ route('tenancies.create') }}"
-           class="btn inline-flex items-center justify-center gap-2"
-           style="background:#176b55;color:#fff;padding:13px 20px;font-size:15px;box-shadow:0 6px 16px rgba(23,107,85,.22);">
-            <span aria-hidden="true" style="font-size:21px;line-height:1;">＋</span>
-            <span>Create Tenancy</span>
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('tenancies.vacated') }}"
+               class="btn bg-gray-200 text-gray-700">
+                Vacated Tenancies ({{ $stats['ended'] }})
+            </a>
+            <a href="{{ route('tenancies.create') }}"
+               class="btn inline-flex items-center justify-center gap-2"
+               style="background:#176b55;color:#fff;padding:13px 20px;font-size:15px;box-shadow:0 6px 16px rgba(23,107,85,.22);">
+                <span aria-hidden="true" style="font-size:21px;line-height:1;">＋</span>
+                <span>Create Tenancy</span>
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -46,10 +52,9 @@
                    class="form-control md:col-span-2">
 
             <select name="status" class="form-control">
-                <option value="">All statuses</option>
+                <option value="">All active and upcoming</option>
                 <option value="active" @selected(request('status') === 'active')>Active</option>
                 <option value="upcoming" @selected(request('status') === 'upcoming')>Upcoming</option>
-                <option value="ended" @selected(request('status') === 'ended')>Ended</option>
             </select>
 
             <div class="flex gap-2">
@@ -119,10 +124,23 @@
                             </td>
 
                             <td>
-                                <a href="{{ route('tenancies.show', $tenancy->id) }}"
-                                   class="text-green-700 font-semibold hover:underline">
-                                    View
-                                </a>
+                                <div class="tenancy-actions">
+                                    <a href="{{ route('tenancies.show', $tenancy->id) }}"
+                                       class="btn btn-secondary">
+                                        View
+                                    </a>
+                                    <form method="POST"
+                                          action="{{ route('tenancies.end', $tenancy->id) }}"
+                                          onsubmit="return confirm('{{ $tenancy->status === 'active' ? 'Vacate' : 'Cancel' }} this tenancy? It will move to Vacated Tenancies.');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="ended_at" value="{{ now()->toDateString() }}">
+                                        <button type="submit"
+                                                class="btn btn-danger">
+                                            {{ $tenancy->status === 'active' ? 'Vacate' : 'Cancel' }}
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

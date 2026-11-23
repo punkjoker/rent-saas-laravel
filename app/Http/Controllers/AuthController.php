@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Landlord;
+use App\Models\Expense;
+use App\Models\RentCharge;
+use App\Models\RentPayment;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -182,11 +186,86 @@ class AuthController extends Controller
         $landlord = $user->landlord;
 
         $subscription = $landlord?->activeSubscription;
+        $dashboardCharts = [
+            'monthly' => [],
+            'occupancy' => [
+                'occupied' => 0,
+                'vacant' => 0,
+                'maintenance' => 0,
+                'other' => 0,
+                'total' => 0,
+            ],
+        ];
+
+        if ($landlord) {
+            $monthStart = now()->startOfMonth()->subMonths(5);
+            $months = collect(range(0, 5))->map(function ($offset) use ($monthStart) {
+                $date = $monthStart->copy()->addMonths($offset);
+
+                return [
+                    'key' => $date->format('Y-m'),
+                    'label' => $date->format('M'),
+                ];
+            });
+
+            $chargesByMonth = RentCharge::whereIn('month_year', $months->pluck('key'))
+                ->whereHas('tenancy', fn ($query) => $query->where('landlord_id', $landlord->id))
+                ->get(['month_year', 'total_due'])
+                ->groupBy('month_year')
+                ->map(fn ($charges) => $charges->sum(
+                    fn ($charge) => (float) $charge->total_due
+                ));
+
+            $paymentsByMonth = RentPayment::whereHas(
+                'tenancy',
+                fn ($query) => $query->where('landlord_id', $landlord->id)
+            )
+                ->whereBetween('paid_at', [$monthStart, now()])
+                ->get(['amount', 'paid_at'])
+                ->groupBy(fn ($payment) => $payment->paid_at->format('Y-m'))
+                ->map(fn ($payments) => $payments->sum(
+                    fn ($payment) => (float) $payment->amount
+                ));
+
+            $expensesByMonth = Expense::where('landlord_id', $landlord->id)
+                ->whereBetween('expense_date', [
+                    $monthStart->toDateString(),
+                    now()->toDateString(),
+                ])
+                ->get(['amount', 'expense_date'])
+                ->groupBy(fn ($expense) => $expense->expense_date->format('Y-m'))
+                ->map(fn ($expenses) => $expenses->sum(
+                    fn ($expense) => (float) $expense->amount
+                ));
+
+            $dashboardCharts['monthly'] = $months->map(fn ($month) => [
+                'label' => $month['label'],
+                'billed' => round((float) $chargesByMonth->get($month['key'], 0), 2),
+                'collected' => round((float) $paymentsByMonth->get($month['key'], 0), 2),
+                'expenses' => round((float) $expensesByMonth->get($month['key'], 0), 2),
+            ])->all();
+
+            $unitStatusCounts = Unit::whereHas(
+                'property',
+                fn ($query) => $query->where('landlord_id', $landlord->id)
+            )->get(['status'])->countBy('status');
+
+            $dashboardCharts['occupancy'] = [
+                'occupied' => (int) $unitStatusCounts->get('occupied', 0),
+                'vacant' => (int) $unitStatusCounts->get('vacant', 0),
+                'maintenance' => (int) $unitStatusCounts->get('maintenance', 0),
+                'other' => (int) $unitStatusCounts
+                    ->except(['occupied', 'vacant', 'maintenance'])
+                    ->sum(),
+                'total' => (int) $unitStatusCounts->sum(),
+            ];
+        }
 
         return view('dashboard', compact(
             'user',
             'landlord',
-            'subscription'
+            'subscription',
+            'dashboardCharts'
         ));
     }
 }

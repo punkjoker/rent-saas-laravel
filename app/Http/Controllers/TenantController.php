@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\Tenancy;
 use App\Models\Unit;
 use App\Services\TenantLimitService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -36,11 +37,22 @@ class TenantController extends Controller
             ->firstOrFail();
     }
 
+    private function visibleTenantQuery(int $landlordId): Builder
+    {
+        return Tenant::where('landlord_id', $landlordId)
+            ->where(function (Builder $query) {
+                $query->whereDoesntHave('tenancies')
+                    ->orWhereHas('tenancies', function (Builder $tenancyQuery) {
+                        $tenancyQuery->whereIn('status', ['active', 'upcoming']);
+                    });
+            });
+    }
+
     public function index(Request $request)
     {
         $landlordId = $this->landlordId();
 
-        $query = Tenant::where('landlord_id', $landlordId);
+        $query = $this->visibleTenantQuery($landlordId);
 
         if ($request->filled('search')) {
             $search = trim($request->search);
@@ -59,8 +71,8 @@ class TenantController extends Controller
         $tenants = $query->latest()->paginate(15)->withQueryString();
 
         $stats = [
-            'total' => Tenant::where('landlord_id', $landlordId)->count(),
-            'registered_this_month' => Tenant::where('landlord_id', $landlordId)
+            'total' => $this->visibleTenantQuery($landlordId)->count(),
+            'registered_this_month' => $this->visibleTenantQuery($landlordId)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count(),

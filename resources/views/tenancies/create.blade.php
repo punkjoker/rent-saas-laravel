@@ -6,7 +6,7 @@
 
     <div>
         <a href="{{ route('tenancies.index') }}"
-           class="text-green-700 hover:underline text-sm">
+           class="btn btn-outline">
             ← Back to Tenancies
         </a>
 
@@ -31,7 +31,7 @@
         <div class="page-card">
             <p class="text-gray-700">You have not registered any tenants yet.</p>
             <a href="{{ route('tenants.create') }}"
-               class="btn inline-block mt-4">
+               class="btn btn-primary inline-block mt-4">
                 Register Tenant
             </a>
         </div>
@@ -41,7 +41,7 @@
                 No vacant units are currently available for allocation.
             </p>
             <a href="{{ route('properties.index') }}"
-               class="btn inline-block mt-4">
+               class="btn btn-primary inline-block mt-4">
                 View Properties
             </a>
         </div>
@@ -179,7 +179,7 @@
                 Cancel
             </a>
 
-            <button type="submit" class="btn">
+            <button type="submit" class="btn btn-primary">
                 Create Tenancy & Allocate Unit
             </button>
         </div>

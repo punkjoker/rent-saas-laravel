@@ -7,7 +7,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <a href="{{ route('tenancies.index') }}"
-               class="text-green-700 hover:underline text-sm">
+               class="btn btn-outline">
                 ← Back to Tenancies
             </a>
 
@@ -36,10 +36,21 @@
                        class="form-control">
 
                 <button type="submit"
-                        class="btn bg-red-600 hover:bg-red-700">
-                    End Tenancy
+                        class="btn btn-danger">
+                    {{ $tenancy->status === 'active' ? 'Vacate Tenancy' : 'Cancel Tenancy' }}
                 </button>
             </form>
+        @elseif($tenancy->status === 'ended')
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('tenancies.reconciliation', $tenancy->id) }}"
+                   class="btn btn-primary">
+                    Reconcile
+                </a>
+                <a href="{{ route('tenancies.reconciliation.final', $tenancy->id) }}"
+                   class="btn btn-secondary">
+                    Final View
+                </a>
+            </div>
         @endif
     </div>
 

@@ -168,6 +168,7 @@
             .intro h1 { font-size: 27px; }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/pango-glass.css') }}">
 </head>
 
 <body>

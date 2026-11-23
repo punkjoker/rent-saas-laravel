@@ -62,6 +62,7 @@ class RentChargeController extends Controller
         $monthEnd = date('Y-m-t', strtotime($monthStart));
 
         $query->where('landlord_id', $landlordId)
+            ->whereIn('status', ['active', 'upcoming'])
             ->whereDate('start_date', '<=', $monthEnd)
             ->where(function ($query) use ($monthStart) {
                 $query->whereDate('ended_at', '>=', $monthStart)

@@ -12,6 +12,7 @@ use App\Http\Controllers\RentChargeController;
 use App\Http\Controllers\RentPaymentController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ReportController;
 
 // Public homepage
 Route::get('/', [AuthController::class, 'home'])
@@ -120,6 +121,25 @@ Route::middleware('auth')->group(function () {
     Route::post('/tenancies', [TenancyController::class, 'store'])
         ->name('tenancies.store');
 
+    Route::get('/tenancies/vacated', [TenancyController::class, 'vacated'])
+        ->name('tenancies.vacated');
+
+    Route::get('/tenancies/{tenancy}/reconciliation/final', [TenancyController::class, 'finalReconciliation'])
+        ->whereNumber('tenancy')
+        ->name('tenancies.reconciliation.final');
+
+    Route::get('/tenancies/{tenancy}/reconciliation', [TenancyController::class, 'reconciliation'])
+        ->whereNumber('tenancy')
+        ->name('tenancies.reconciliation');
+
+    Route::put('/tenancies/{tenancy}/reconciliation', [TenancyController::class, 'saveReconciliation'])
+        ->whereNumber('tenancy')
+        ->name('tenancies.reconciliation.save');
+
+    Route::patch('/tenancies/{tenancy}/reconciliation/finalize', [TenancyController::class, 'finalizeReconciliation'])
+        ->whereNumber('tenancy')
+        ->name('tenancies.reconciliation.finalize');
+
     Route::get('/tenancies/{tenancy}', [TenancyController::class, 'show'])
         ->whereNumber('tenancy')
         ->name('tenancies.show');
@@ -176,6 +196,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/deposits', [DepositController::class, 'index'])
         ->name('deposits.index');
+
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->name('reports.index');
 
     Route::get('/expenses', [ExpenseController::class, 'index'])
         ->name('expenses.index');

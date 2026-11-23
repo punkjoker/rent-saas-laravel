@@ -15,6 +15,7 @@
         @media(max-width:600px){body{margin:12px}main{padding:16px}.breakdown th,.breakdown td{font-size:13px;padding:7px 4px}}
         @media print{body{margin:0}.actions{display:none}main{border:0}}
     </style>
+    <link rel="stylesheet" href="{{ asset('css/pango-glass.css') }}">
 </head>
 <body>
 <main>

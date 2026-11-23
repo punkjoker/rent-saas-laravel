@@ -165,6 +165,156 @@
             border-radius: 20px;
         }
 
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .chart-card {
+            background: white;
+            border: 1px solid #e6ede8;
+            border-radius: 14px;
+            padding: 22px;
+            min-width: 0;
+            box-shadow: 0 8px 24px rgba(20, 44, 36, .04);
+        }
+
+        .chart-card-wide {
+            grid-column: 1 / -1;
+        }
+
+        .chart-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .chart-heading h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .chart-heading p {
+            color: #78857e;
+            font-size: 12px;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 16px;
+            color: #65756c;
+            font-size: 12px;
+        }
+
+        .chart-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .bar-chart {
+            height: 220px;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            padding: 10px 4px 0;
+        }
+
+        .bar-chart-group {
+            min-width: 0;
+            height: 100%;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .bar-chart-pair {
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 5px;
+            border-bottom: 1px solid #e9efeb;
+        }
+
+        .chart-bar {
+            width: min(30px, 42%);
+            min-height: 0;
+            border-radius: 5px 5px 0 0;
+            transition: height .25s ease;
+        }
+
+        .chart-bar-billed {
+            background: linear-gradient(180deg, #72c4a0, #238060);
+        }
+
+        .chart-bar-collected {
+            background: linear-gradient(180deg, #8cb4f4, #477dd1);
+        }
+
+        .chart-bar-expense {
+            background: linear-gradient(180deg, #c0a9ef, #8461c6);
+        }
+
+        .bar-chart-label {
+            color: #78857e;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .occupancy-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            min-height: 220px;
+        }
+
+        .occupancy-chart {
+            width: 170px;
+            height: 170px;
+            flex: 0 0 auto;
+        }
+
+        .occupancy-legend {
+            display: grid;
+            gap: 12px;
+            color: #65756c;
+            font-size: 13px;
+        }
+
+        .occupancy-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .occupancy-legend-item strong {
+            color: #17251f;
+            margin-left: auto;
+        }
+
+        .chart-empty {
+            color: #78857e;
+            font-size: 12px;
+            margin-top: 12px;
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -202,6 +352,16 @@
         .content-card p {
             color: #7b8981;
             font-size: 14px;
+        }
+
+        @media(max-width: 1000px) {
+            .dashboard-charts {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-card-wide {
+                grid-column: auto;
+            }
         }
 
         .logout {
@@ -271,12 +431,32 @@
                 grid-template-columns: 1fr;
             }
 
+            .chart-card {
+                padding: 17px;
+            }
+
+            .bar-chart {
+                gap: 6px;
+                height: 190px;
+            }
+
+            .occupancy-content {
+                flex-direction: column;
+                gap: 18px;
+            }
+
+            .occupancy-legend {
+                width: 100%;
+            }
+
             .topbar {
                 align-items: flex-start;
                 flex-direction: column;
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/pango-glass.css') }}">
 </head>
 
 <body>
@@ -288,46 +468,66 @@
     <nav>
         <div class="nav-label">MAIN MENU</div>
 
-        <a href="{{ route('dashboard') }}" class="nav-link active">
-            ◫ Dashboard
+        <a href="{{ route('dashboard') }}"
+           class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
         </a>
-
-        <a href="{{ route('properties.index') }}" class="nav-link">
-    ⌂ Properties
-</a>
-        <a href="{{ route('tenants.index') }}" class="nav-link">
-    ♙ Tenants
-</a>
-<a href="{{ route('tenancies.index') }}"
-   class="nav-link {{ request()->routeIs('tenancies.*') ? 'active' : '' }}">
-    <i class="fas fa-file-contract"></i>
-    <span>♙Tenancies</span>
-</a>
-<a href="{{ route('rent-charges.index') }}"
-   class="nav-link {{ request()->routeIs('rent-charges.*') ? 'active' : '' }}">
-    <i class="fas fa-file-invoice-dollar"></i>
-    <span>Rent Charges</span>
-</a>
+        <a href="{{ route('properties.index') }}"
+           class="nav-link {{ request()->routeIs('properties.*') || request()->routeIs('units.*') ? 'active' : '' }}">
+            <i class="fas fa-building"></i>
+            <span>Properties</span>
+        </a>
+        <a href="{{ route('tenants.index') }}"
+           class="nav-link {{ request()->routeIs('tenants.*') ? 'active' : '' }}">
+            <i class="fas fa-users"></i>
+            <span>Tenants</span>
+        </a>
+        <a href="{{ route('tenancies.index') }}"
+           class="nav-link {{ request()->routeIs('tenancies.index') || request()->routeIs('tenancies.create') || request()->routeIs('tenancies.show') ? 'active' : '' }}">
+            <i class="fas fa-file-contract"></i>
+            <span>Tenancies</span>
+        </a>
+        <a href="{{ route('tenancies.vacated') }}"
+           class="nav-link {{ request()->routeIs('tenancies.vacated') || request()->routeIs('tenancies.reconciliation*') ? 'active' : '' }}">
+            <i class="fas fa-box-archive"></i>
+            <span>Vacated Tenancies</span>
+        </a>
+        <a href="{{ route('rent-charges.index') }}"
+           class="nav-link {{ request()->routeIs('rent-charges.*') ? 'active' : '' }}">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Rent Charges</span>
+        </a>
         <a href="{{ route('monthly-bills.index') }}"
            class="nav-link {{ request()->routeIs('monthly-bills.*') ? 'active' : '' }}">
-            ⚡ Monthly Bills
+            <i class="fas fa-calendar-alt"></i>
+            <span>Monthly Bills</span>
         </a>
         <a href="{{ route('expenses.index') }}"
            class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
-            ◆ Expenses
+            <i class="fas fa-receipt"></i>
+            <span>Expenses</span>
         </a>
         <a href="{{ route('payments.index') }}"
            class="nav-link {{ request()->routeIs('payments.*') ? 'active' : '' }}">
-            ▣ Rent Payments
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Rent Payments</span>
         </a>
         <a href="{{ route('deposits.index') }}"
            class="nav-link {{ request()->routeIs('deposits.*') ? 'active' : '' }}">
-            ◈ Deposits
+            <i class="fas fa-piggy-bank"></i>
+            <span>Deposits</span>
         </a>
         <div class="nav-label">MANAGEMENT</div>
-
-        <a href="#" class="nav-link">▤ Reports</a>
-        <a href="#" class="nav-link">⚙ Settings</a>
+        <a href="{{ route('reports.index') }}"
+           class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+            <i class="fas fa-chart-pie"></i>
+            <span>Reports</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-gear"></i>
+            <span>Settings</span>
+        </a>
     </nav>
 
     <form method="POST" action="{{ route('logout') }}">
@@ -424,6 +624,139 @@
         </section>
 
     @endif
+
+    @php
+        $monthlyRentMax = max(1, collect($dashboardCharts['monthly'])->max(
+            fn ($month) => max($month['billed'], $month['collected'])
+        ) ?? 0);
+        $monthlyExpenseMax = max(1, collect($dashboardCharts['monthly'])->max('expenses') ?? 0);
+        $occupancy = $dashboardCharts['occupancy'];
+        $donutCircumference = 314.16;
+        $donutSegments = [
+            ['label' => 'Occupied', 'count' => $occupancy['occupied'], 'color' => '#238060'],
+            ['label' => 'Vacant', 'count' => $occupancy['vacant'], 'color' => '#477dd1'],
+            ['label' => 'Maintenance', 'count' => $occupancy['maintenance'], 'color' => '#e5a83b'],
+            ['label' => 'Other', 'count' => $occupancy['other'], 'color' => '#9aa7a0'],
+        ];
+        $donutOffset = 0;
+    @endphp
+
+    <section class="dashboard-charts" aria-label="Property performance charts">
+        <article class="chart-card chart-card-wide">
+            <div class="chart-heading">
+                <div>
+                    <h3>Rent billed vs payments received</h3>
+                    <p>Monthly charges compared with approved payments received over the last six months.</p>
+                </div>
+            </div>
+
+            <div class="bar-chart" role="img" aria-label="Monthly rent billed and payment collection bar chart">
+                @foreach($dashboardCharts['monthly'] as $month)
+                    @php
+                        $billedHeight = $month['billed'] > 0
+                            ? max(($month['billed'] / $monthlyRentMax) * 100, 3)
+                            : 0;
+                        $collectedHeight = $month['collected'] > 0
+                            ? max(($month['collected'] / $monthlyRentMax) * 100, 3)
+                            : 0;
+                    @endphp
+                    <div class="bar-chart-group">
+                        <div class="bar-chart-pair">
+                            <span class="chart-bar chart-bar-billed"
+                                  style="height:{{ $billedHeight }}%"
+                                  title="{{ $month['label'] }} billed: KES {{ number_format($month['billed'], 2) }}"></span>
+                            <span class="chart-bar chart-bar-collected"
+                                  style="height:{{ $collectedHeight }}%"
+                                  title="{{ $month['label'] }} received: KES {{ number_format($month['collected'], 2) }}"></span>
+                        </div>
+                        <span class="bar-chart-label">{{ $month['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+            <div class="chart-legend">
+                <span><i class="legend-dot" style="background:#238060"></i>Rent billed</span>
+                <span><i class="legend-dot" style="background:#477dd1"></i>Payments received</span>
+            </div>
+        </article>
+
+        <article class="chart-card">
+            <div class="chart-heading">
+                <div>
+                    <h3>Monthly expenses</h3>
+                    <p>Recorded expenses for the last six months.</p>
+                </div>
+            </div>
+
+            <div class="bar-chart" role="img" aria-label="Monthly expenses bar chart">
+                @foreach($dashboardCharts['monthly'] as $month)
+                    @php
+                        $expenseHeight = $month['expenses'] > 0
+                            ? max(($month['expenses'] / $monthlyExpenseMax) * 100, 3)
+                            : 0;
+                    @endphp
+                    <div class="bar-chart-group">
+                        <div class="bar-chart-pair">
+                            <span class="chart-bar chart-bar-expense"
+                                  style="height:{{ $expenseHeight }}%"
+                                  title="{{ $month['label'] }} expenses: KES {{ number_format($month['expenses'], 2) }}"></span>
+                        </div>
+                        <span class="bar-chart-label">{{ $month['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+            <div class="chart-legend">
+                <span><i class="legend-dot" style="background:#8461c6"></i>Expenses recorded</span>
+            </div>
+        </article>
+
+        <article class="chart-card">
+            <div class="chart-heading">
+                <div>
+                    <h3>Unit occupancy</h3>
+                    <p>Current unit status across your properties.</p>
+                </div>
+            </div>
+
+            <div class="occupancy-content">
+                <svg class="occupancy-chart"
+                     viewBox="0 0 160 160"
+                     role="img"
+                     aria-label="Occupancy: {{ $occupancy['occupied'] }} occupied, {{ $occupancy['vacant'] }} vacant, {{ $occupancy['maintenance'] }} under maintenance, {{ $occupancy['other'] }} other">
+                    <circle cx="80" cy="80" r="50" fill="none" stroke="#edf1ee" stroke-width="18"></circle>
+                    @foreach($donutSegments as $segment)
+                        @php
+                            $segmentLength = $occupancy['total'] > 0
+                                ? $donutCircumference * ($segment['count'] / $occupancy['total'])
+                                : 0;
+                            $segmentStart = $donutOffset;
+                            $donutOffset += $segmentLength;
+                        @endphp
+                        @if($segment['count'] > 0)
+                            <circle cx="80" cy="80" r="50" fill="none"
+                                    stroke="{{ $segment['color'] }}" stroke-width="18"
+                                    stroke-dasharray="{{ $segmentLength }} {{ $donutCircumference - $segmentLength }}"
+                                    stroke-dashoffset="{{ -$segmentStart }}"
+                                    transform="rotate(-90 80 80)"></circle>
+                        @endif
+                    @endforeach
+                    <text x="80" y="77" text-anchor="middle" fill="#17251f" font-size="25" font-weight="700">
+                        {{ $occupancy['total'] }}
+                    </text>
+                    <text x="80" y="98" text-anchor="middle" fill="#78857e" font-size="11">total units</text>
+                </svg>
+
+                <div class="occupancy-legend">
+                    @foreach($donutSegments as $segment)
+                        <div class="occupancy-legend-item">
+                            <i class="legend-dot" style="background:{{ $segment['color'] }}"></i>
+                            <span>{{ $segment['label'] }}</span>
+                            <strong>{{ $segment['count'] }}</strong>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </article>
+    </section>
 
 
     <section class="stats">
