@@ -69,11 +69,14 @@
                         <th>Garbage (KES)</th>
                         <th>Water (KES)</th>
                         <th>Total due (KES)</th>
+                        <th>Due date</th>
+                        <th>Payment status</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($savedCharges as $charge)
                         @php($tenancy = $charge->tenancy)
+                        @php($status = $chargeStatuses[$charge->id])
                         <tr>
                             <td>{{ $tenancy->property->property_name ?? 'N/A' }}</td>
                             <td>{{ $tenancy->unit->unit_number ?? 'N/A' }}</td>
@@ -83,10 +86,27 @@
                             <td>KES {{ number_format((float) $charge->garbage_fee, 2) }}</td>
                             <td>KES {{ number_format((float) $charge->water_bill, 2) }}</td>
                             <td class="font-bold">KES {{ number_format((float) $charge->total_due, 2) }}</td>
+                            <td>{{ $status['due_date']->format('d M Y') }}</td>
+                            <td>
+                                @php
+                                    $statusLabels = [
+                                        'paid' => ['Paid', 'text-green-700'],
+                                        'partial' => ['Partially paid · KES '.number_format($status['balance'], 2).' due', 'text-amber-700'],
+                                        'overdue' => ['Overdue · KES '.number_format($status['balance'], 2), 'text-red-700'],
+                                        'due' => [
+                                            ($status['due_date']->isSameDay(now()) ? 'Due today' : 'Not yet due')
+                                                .' · KES '.number_format($status['balance'], 2),
+                                            'text-blue-700',
+                                        ],
+                                    ];
+                                    [$statusLabel, $statusClass] = $statusLabels[$status['status']];
+                                @endphp
+                                <span class="font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-gray-500 p-6">
+                            <td colspan="10" class="text-center text-gray-500 p-6">
                                 No saved rent charges match these filters.
                             </td>
                         </tr>
@@ -100,6 +120,7 @@
                             <td class="p-4">KES {{ number_format($chargeTotals['garbage'], 2) }}</td>
                             <td class="p-4">KES {{ number_format($chargeTotals['water'], 2) }}</td>
                             <td class="p-4">KES {{ number_format($chargeTotals['total'], 2) }}</td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 @endif

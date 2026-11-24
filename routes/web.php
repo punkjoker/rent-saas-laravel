@@ -3,6 +3,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\UnitController;
@@ -13,6 +15,8 @@ use App\Http\Controllers\RentPaymentController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\PropertyListingController;
+use App\Http\Controllers\PublicPropertyListingController;
 
 // Public homepage
 Route::get('/', [AuthController::class, 'home'])
@@ -43,23 +47,78 @@ Route::post('/tenant-payments/{token}', [RentPaymentController::class, 'submitPu
     ->middleware('throttle:10,1')
     ->name('tenant-payments.submit');
 
+Route::get('/rentals/{listing:slug}', [PublicPropertyListingController::class, 'show'])
+    ->name('rentals.show');
+
 Route::get('/tenant-payments/{token}/receipts/{payment}', [RentPaymentController::class, 'publicReceipt'])
     ->where('token', '[A-Za-z0-9]{64}')
     ->whereNumber('payment')
     ->middleware('throttle:30,1')
     ->name('tenant-payments.receipt');
 
+Route::prefix('manage')->name('admin.')->group(function () {
+    Route::get('/login', [AdminAuthController::class, 'create'])
+        ->name('login');
+    Route::post('/login', [AdminAuthController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('login.submit');
+
+    Route::middleware(['auth', 'admin'])->group(function () {
+        Route::get('/', [AdminController::class, 'index'])
+            ->name('dashboard');
+        Route::post('/logout', [AdminAuthController::class, 'destroy'])
+            ->name('logout');
+        Route::get('/accounts', [AdminController::class, 'accounts'])
+            ->name('accounts');
+        Route::patch('/accounts/{landlord}/approval', [AdminController::class, 'updateAccount'])
+            ->whereNumber('landlord')
+            ->name('accounts.update');
+        Route::get('/subscriptions', [AdminController::class, 'subscriptions'])
+            ->name('subscriptions');
+        Route::post('/subscriptions/{landlord}/extend', [AdminController::class, 'extendSubscription'])
+            ->whereNumber('landlord')
+            ->name('subscriptions.extend');
+        Route::get('/properties', [AdminController::class, 'properties'])
+            ->name('properties');
+        Route::patch('/properties/{property}/availability', [AdminController::class, 'updateProperty'])
+            ->whereNumber('property')
+            ->name('properties.update');
+        Route::get('/listings', [AdminController::class, 'listings'])
+            ->name('listings');
+        Route::patch('/listings/{listing}/review', [AdminController::class, 'reviewListing'])
+            ->whereNumber('listing')
+            ->name('listings.review');
+    });
+});
+
 // Landlord logout
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'landlord.approved'])->group(function () {
     Route::get('/billing/plans', [BillingController::class, 'index'])
         ->name('billing.plans');
 
     Route::get('/properties', [PropertyController::class, 'index'])
         ->name('properties.index');
+
+    Route::get('/property-listings', [PropertyListingController::class, 'index'])
+        ->name('property-listings.index');
+    Route::get('/property-listings/create', [PropertyListingController::class, 'create'])
+        ->name('property-listings.create');
+    Route::post('/property-listings', [PropertyListingController::class, 'store'])
+        ->name('property-listings.store');
+    Route::get('/property-listings/{listing}/edit', [PropertyListingController::class, 'edit'])
+        ->whereNumber('listing')
+        ->name('property-listings.edit');
+    Route::put('/property-listings/{listing}', [PropertyListingController::class, 'update'])
+        ->whereNumber('listing')
+        ->name('property-listings.update');
+    Route::delete('/property-listings/{listing}/images/{image}', [PropertyListingController::class, 'destroyImage'])
+        ->whereNumber('listing')
+        ->whereNumber('image')
+        ->name('property-listings.images.destroy');
 
     Route::get('/properties/create', [PropertyController::class, 'create'])
         ->name('properties.create');
@@ -139,6 +198,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tenancies/{tenancy}/reconciliation/finalize', [TenancyController::class, 'finalizeReconciliation'])
         ->whereNumber('tenancy')
         ->name('tenancies.reconciliation.finalize');
+
+    Route::post('/tenancies/{tenancy}/reconciliation/refund', [TenancyController::class, 'markRefundPaid'])
+        ->whereNumber('tenancy')
+        ->name('tenancies.reconciliation.refund');
 
     Route::get('/tenancies/{tenancy}', [TenancyController::class, 'show'])
         ->whereNumber('tenancy')
@@ -224,5 +287,5 @@ Route::middleware('auth')->group(function () {
 
 // Protected landlord dashboard
 Route::get('/dashboard', [AuthController::class, 'dashboard'])
-    ->middleware('auth')
+    ->middleware(['auth', 'landlord.approved'])
     ->name('dashboard');

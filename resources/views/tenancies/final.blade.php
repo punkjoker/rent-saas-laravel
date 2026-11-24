@@ -34,6 +34,46 @@
         <p class="text-sm text-gray-500">Records through {{ $asOfDate->format('d M Y') }}</p>
     </div>
 
+    <div class="page-card flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+            <p class="text-sm text-gray-500">Deposit refund status</p>
+            @if($reconciliation?->refunded_at)
+                <p class="font-semibold text-green-700 mt-1">
+                    Refunded KES {{ number_format((float) $reconciliation->refund_amount, 2) }}
+                    on {{ $reconciliation->refunded_at->format('d M Y, h:i A') }}
+                </p>
+                @if($reconciliation->refund_reference)
+                    <p class="text-xs text-gray-500 mt-1">Reference: {{ $reconciliation->refund_reference }}</p>
+                @endif
+                @if($reconciliation->refund_paid_by)
+                    <p class="text-xs text-gray-500 mt-1">Recorded by: {{ $reconciliation->refundPaidBy->name }}</p>
+                @endif
+            @elseif($summary['settlement_balance'] > 0 && $reconciliation?->finalized_at)
+                <p class="font-semibold text-amber-700 mt-1">
+                    Pending refund · KES {{ number_format($summary['settlement_balance'], 2) }}
+                </p>
+            @elseif($summary['settlement_balance'] <= 0)
+                <p class="font-semibold text-gray-600 mt-1">No refundable deposit balance.</p>
+            @else
+                <p class="font-semibold text-gray-600 mt-1">Finalize the reconciliation before paying a refund.</p>
+            @endif
+        </div>
+
+        @if(!$reconciliation?->refunded_at &&
+            $reconciliation?->finalized_at &&
+            $summary['settlement_balance'] > 0)
+            <form method="POST" action="{{ route('tenancies.reconciliation.refund', $tenancy->id) }}"
+                  class="flex flex-col sm:flex-row gap-2"
+                  onsubmit="return confirm('Mark KES {{ number_format($summary['settlement_balance'], 2) }} as refunded to this tenant?')">
+                @csrf
+                <input type="text" name="refund_reference" maxlength="100"
+                       placeholder="Transaction reference (optional)"
+                       class="form-control">
+                <button type="submit" class="btn btn-primary whitespace-nowrap">Mark refund paid</button>
+            </form>
+        @endif
+    </div>
+
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <div class="page-card">
             <p class="text-sm text-gray-500">Agreed Deposit</p>

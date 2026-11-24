@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Landlord;
 use App\Models\Property;
 use App\Models\RentCharge;
+use App\Models\RentPayment;
 use App\Models\Tenancy;
 use App\Exports\RentChargesExport;
+use App\Services\RentChargeStatus;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -145,6 +148,41 @@ class RentChargeController extends Controller
         ];
     }
 
+    private function chargeStatuses(
+        Collection $charges,
+        RentChargeStatus $statusService
+    ): array {
+        if ($charges->isEmpty()) {
+            return [];
+        }
+
+        $tenancyIds = $charges->pluck('tenancy_id')->unique();
+        $lastMonth = $charges->max('month_year');
+        $chargesByTenancy = RentCharge::whereIn('tenancy_id', $tenancyIds)
+            ->where('month_year', '<=', $lastMonth)
+            ->orderBy('month_year')
+            ->get()
+            ->groupBy('tenancy_id');
+        $paymentsByTenancy = RentPayment::whereIn('tenancy_id', $tenancyIds)
+            ->where('paid_at', '<=', now())
+            ->orderBy('paid_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('tenancy_id');
+
+        $statuses = [];
+        foreach ($charges as $charge) {
+            $statuses[$charge->id] = $statusService->forCharge(
+                $charge,
+                $chargesByTenancy->get($charge->tenancy_id, collect()),
+                $paymentsByTenancy->get($charge->tenancy_id, collect()),
+                Carbon::now()
+            );
+        }
+
+        return $statuses;
+    }
+
     /**
      * Display the monthly rent charge register.
      */
@@ -213,7 +251,7 @@ class RentChargeController extends Controller
         ));
     }
 
-    public function monthlyReport(Request $request)
+    public function monthlyReport(Request $request, RentChargeStatus $statusService)
     {
         $landlordId = $this->landlordId();
         $filters = $this->reportFilters($request, $landlordId);
@@ -230,10 +268,12 @@ class RentChargeController extends Controller
             $propertyId,
             $search
         );
+        $chargeStatuses = $this->chargeStatuses($savedCharges, $statusService);
         $chargeTotals = $this->chargeTotals($savedCharges);
 
         return view('rent-charges.report', compact(
             'savedCharges',
+            'chargeStatuses',
             'chargeTotals',
             'properties',
             'month',

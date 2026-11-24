@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Landlord;
+use App\Models\PropertyListing;
 use App\Models\Expense;
 use App\Models\RentCharge;
 use App\Models\RentPayment;
@@ -24,8 +25,19 @@ class AuthController extends Controller
             ->where('slug', '!=', 'free-trial')
             ->orderBy('sort_order')
             ->get();
+        $publicListings = PropertyListing::where('status', 'approved')
+            ->whereHas('property', fn ($query) => $query
+                ->where('is_active', true)
+                ->whereNull('admin_revoked_at')
+                ->whereHas('landlord', fn ($landlordQuery) => $landlordQuery
+                    ->where('is_active', true)
+                    ->where('approval_status', 'approved')))
+            ->with(['property', 'images'])
+            ->latest('reviewed_at')
+            ->take(6)
+            ->get();
 
-        return view('welcome', compact('plans'));
+        return view('welcome', compact('plans', 'publicListings'));
     }
 
     /**
@@ -154,6 +166,22 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+
+        $user = Auth::user();
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if (!$user->isAdmin() &&
+            (!$user->landlord ||
+                !$user->landlord->is_active ||
+                $user->landlord->approval_status !== 'approved')) {
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => 'This landlord account is inactive or is not approved to access the workspace.',
+            ]);
+        }
 
         return redirect()->intended(route('dashboard'));
     }

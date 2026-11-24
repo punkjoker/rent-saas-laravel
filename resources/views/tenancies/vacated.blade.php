@@ -44,6 +44,7 @@
                         <th>Unit</th>
                         <th>Monthly Rent</th>
                         <th>Vacated On</th>
+                        <th>Deposit refund</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -58,6 +59,31 @@
                             <td>{{ $tenancy->unit->unit_number }}</td>
                             <td>KES {{ number_format((float) $tenancy->monthly_rent, 2) }}</td>
                             <td>{{ $tenancy->ended_at?->format('d M Y') ?? '—' }}</td>
+                            <td>
+                                @if($tenancy->reconciliation?->refunded_at)
+                                    <span class="font-semibold text-green-700">
+                                        Refunded · KES {{ number_format((float) $tenancy->reconciliation->refund_amount, 2) }}
+                                    </span>
+                                @elseif($tenancy->reconciliation?->finalized_at)
+                                    @if(($refundBalances[$tenancy->id] ?? 0) > 0)
+                                        <div class="flex flex-col gap-1">
+                                            <span class="font-semibold text-amber-700">
+                                                Pending · KES {{ number_format($refundBalances[$tenancy->id], 2) }}
+                                            </span>
+                                            <form method="POST"
+                                                  action="{{ route('tenancies.reconciliation.refund', $tenancy->id) }}"
+                                                  onsubmit="return confirm('Mark KES {{ number_format($refundBalances[$tenancy->id], 2) }} as refunded to this tenant?')">
+                                                @csrf
+                                                <button type="submit" class="btn btn-primary">Mark paid</button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="font-semibold text-gray-600">No refund due</span>
+                                    @endif
+                                @else
+                                    <span class="text-gray-500">Reconcile first</span>
+                                @endif
+                            </td>
                             <td>
                                 <div class="vacated-actions">
                                     <a href="{{ route('tenancies.reconciliation', $tenancy->id) }}"
@@ -77,7 +103,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-8 text-gray-500">
+                            <td colspan="7" class="text-center py-8 text-gray-500">
                                 @if(request('search'))
                                     No vacated tenancies match your search.
                                 @else

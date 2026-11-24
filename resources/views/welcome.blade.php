@@ -322,6 +322,78 @@
             font-size: 14px;
         }
 
+        .public-listings-section {
+            padding: 82px 0;
+            background: #f6faf7;
+        }
+
+        .public-listings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .public-listing-card {
+            overflow: hidden;
+            border: 1px solid #e4ece6;
+            border-radius: 17px;
+            background: white;
+            box-shadow: 0 10px 28px rgba(20, 44, 36, .05);
+        }
+
+        .public-listing-card img,
+        .public-listing-placeholder {
+            display: grid;
+            width: 100%;
+            height: 205px;
+            object-fit: cover;
+            place-items: center;
+            background: #e8eee9;
+            color: #65756c;
+        }
+
+        .public-listing-card-body {
+            padding: 18px;
+        }
+
+        .public-listing-card h3 {
+            font-size: 17px;
+            line-height: 1.35;
+        }
+
+        .public-listing-location {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .public-listing-price {
+            margin-top: 12px;
+            color: var(--primary);
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .public-listing-facts {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            color: #63736a;
+            font-size: 11px;
+        }
+
+        .public-listing-link {
+            display: inline-flex;
+            margin-top: 15px;
+            padding: 9px 13px;
+            border-radius: 8px;
+            color: white;
+            background: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
         /* AUTH SECTION */
 
         .auth-section {
@@ -509,6 +581,9 @@
             .features-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+            .public-listings-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
 
             .nav-links {
                 display: none;
@@ -521,6 +596,9 @@
             }
 
             .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .public-listings-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -561,6 +639,7 @@
         <nav class="nav-links">
             <a href="#features">Features</a>
             <a href="#pricing">Pricing</a>
+            <a href="#properties">Properties</a>
             <a href="#about">About</a>
             <a href="#register">Get Started</a>
         </nav>
@@ -655,6 +734,44 @@
 
 </section>
 
+<section class="public-listings-section" id="properties">
+    <div class="container">
+        <div class="section-heading">
+            <span class="eyebrow">Available rentals</span>
+            <h2>Find a property to call home</h2>
+            <p>Browse rental properties advertised by landlords on Pango.</p>
+        </div>
+
+        @if($publicListings->isNotEmpty())
+            <div class="public-listings-grid">
+                @foreach($publicListings as $listing)
+                    <article class="public-listing-card">
+                        @if($listing->images->isNotEmpty())
+                            <img src="{{ Storage::disk('public')->url($listing->images->first()->image_path) }}"
+                                 alt="{{ $listing->title }}">
+                        @else
+                            <div class="public-listing-placeholder">Property photo coming soon</div>
+                        @endif
+                        <div class="public-listing-card-body">
+                            <h3>{{ $listing->title }}</h3>
+                            <p class="public-listing-location">
+                                {{ $listing->property->town ?? $listing->property->county ?? $listing->property->address }}
+                            </p>
+                            <p class="public-listing-price">KES {{ number_format((float) $listing->monthly_rent, 2) }} / month</p>
+                            <div class="public-listing-facts">
+                                @if($listing->bedrooms !== null)<span>{{ $listing->bedrooms }} beds</span>@endif
+                                @if($listing->bathrooms !== null)<span>{{ $listing->bathrooms }} baths</span>@endif
+                            </div>
+                            <a href="{{ route('rentals.show', $listing->slug) }}" class="public-listing-link">View property</a>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        @else
+            <p style="text-align:center;color:var(--muted)">No property advertisements are available right now.</p>
+        @endif
+    </div>
+</section>
 
 <!-- FEATURES SECTION -->
 

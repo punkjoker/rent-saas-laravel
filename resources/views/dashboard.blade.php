@@ -478,6 +478,11 @@
             <i class="fas fa-building"></i>
             <span>Properties</span>
         </a>
+        <a href="{{ route('property-listings.index') }}"
+           class="nav-link {{ request()->routeIs('property-listings.*') ? 'active' : '' }}">
+            <i class="fas fa-bullhorn"></i>
+            <span>Advertise Property</span>
+        </a>
         <a href="{{ route('tenants.index') }}"
            class="nav-link {{ request()->routeIs('tenants.*') ? 'active' : '' }}">
             <i class="fas fa-users"></i>

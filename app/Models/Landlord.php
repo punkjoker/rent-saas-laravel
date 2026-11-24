@@ -21,6 +21,8 @@ class Landlord extends Model
         'town',
         'country',
         'is_active',
+        'approval_status',
+        'rejection_reason',
     ];
 
     protected $casts = [

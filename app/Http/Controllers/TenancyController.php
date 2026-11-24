@@ -142,13 +142,16 @@ class TenancyController extends Controller
         return view('tenancies.index', compact('tenancies', 'stats'));
     }
 
-    public function vacated(Request $request)
+    public function vacated(
+        Request $request,
+        TenancyReconciliationCalculator $calculator
+    )
     {
         $landlordId = $this->landlordId();
 
         $this->synchronizeStatuses($landlordId);
 
-        $query = Tenancy::with(['tenant', 'property', 'unit'])
+        $query = Tenancy::with(['tenant', 'property', 'unit', 'reconciliation'])
             ->where('landlord_id', $landlordId)
             ->where('status', 'ended');
 
@@ -159,8 +162,16 @@ class TenancyController extends Controller
         $tenancies = $query->latest('ended_at')
             ->paginate(15)
             ->withQueryString();
+        $refundBalances = [];
+        foreach ($tenancies as $tenancy) {
+            if ($tenancy->reconciliation?->finalized_at &&
+                !$tenancy->reconciliation->refunded_at) {
+                $refundBalances[$tenancy->id] = $this
+                    ->reconciliationDetails($tenancy, $calculator)['summary']['settlement_balance'];
+            }
+        }
 
-        return view('tenancies.vacated', compact('tenancies'));
+        return view('tenancies.vacated', compact('tenancies', 'refundBalances'));
     }
 
     private function applySearch(Builder $query, string $search): void
@@ -458,6 +469,79 @@ class TenancyController extends Controller
         );
     }
 
+    public function markRefundPaid(
+        Request $request,
+        int $tenancy,
+        TenancyReconciliationCalculator $calculator
+    ) {
+        $record = $this->ownedTenancy($tenancy);
+        abort_unless($record->status === 'ended', 404);
+        $validated = $request->validate([
+            'refund_reference' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        DB::transaction(function () use ($record, $validated, $calculator) {
+            $lockedTenancy = Tenancy::where('landlord_id', $record->landlord_id)
+                ->lockForUpdate()
+                ->findOrFail($record->id);
+            $reconciliation = $lockedTenancy->reconciliation()
+                ->lockForUpdate()
+                ->first();
+
+            if (!$reconciliation || !$reconciliation->finalized_at) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Finalize the tenancy reconciliation before recording a refund.',
+                ]);
+            }
+
+            if ($reconciliation->refunded_at) {
+                throw ValidationException::withMessages([
+                    'refund' => 'This deposit refund has already been marked as paid.',
+                ]);
+            }
+
+            $asOfDate = Carbon::parse(
+                $lockedTenancy->ended_at ??
+                $lockedTenancy->lease_end_date ??
+                now()->toDateString()
+            );
+            $summary = $calculator->calculate(
+                $lockedTenancy->rentCharges()
+                    ->where('month_year', '<=', $asOfDate->format('Y-m'))
+                    ->orderBy('month_year')
+                    ->get(),
+                $lockedTenancy->rentPayments()
+                    ->where('paid_at', '<=', $asOfDate->copy()->endOfDay())
+                    ->orderBy('paid_at')
+                    ->orderBy('id')
+                    ->get(),
+                $lockedTenancy->depositPayments()
+                    ->where('paid_at', '<=', $asOfDate->copy()->endOfDay())
+                    ->orderBy('paid_at')
+                    ->orderBy('id')
+                    ->get(),
+                $reconciliation->damages()->get()
+            );
+
+            if ($summary['settlement_balance'] <= 0) {
+                throw ValidationException::withMessages([
+                    'refund' => 'There is no refundable deposit balance to mark as paid.',
+                ]);
+            }
+
+            $reconciliation->update([
+                'refund_amount' => $summary['settlement_balance'],
+                'refunded_at' => now(),
+                'refund_reference' => trim($validated['refund_reference'] ?? '') ?: null,
+                'refund_paid_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()
+            ->route('tenancies.reconciliation.final', $record->id)
+            ->with('success', 'Deposit refund recorded as paid.');
+    }
+
     private function reconciliationDetails(
         Tenancy $tenancy,
         TenancyReconciliationCalculator $calculator
@@ -480,7 +564,7 @@ class TenancyController extends Controller
             ->orderBy('id')
             ->get();
         $reconciliation = $tenancy->reconciliation()
-            ->with('damages')
+            ->with(['damages', 'refundPaidBy'])
             ->first();
         $damages = $reconciliation?->damages ?? collect();
         $summary = $calculator->calculate(

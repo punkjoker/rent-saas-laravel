@@ -196,6 +196,10 @@
         background: linear-gradient(180deg, #f1c978, #d49532);
     }
 
+    .report-bar-refunds {
+        background: linear-gradient(180deg, #f3a5a5, #cf5555);
+    }
+
     .report-horizontal-list {
         display: grid;
         gap: 15px;
@@ -384,7 +388,8 @@
         (float) collect($monthlySeries)->max('rent_billed'),
         (float) collect($monthlySeries)->max('rent_collected'),
         (float) collect($monthlySeries)->max('expenses'),
-        (float) collect($monthlySeries)->max('deposits')
+        (float) collect($monthlySeries)->max('deposits'),
+        (float) collect($monthlySeries)->max('deposit_refunds')
     );
     $propertyScale = max(
         1,
@@ -478,6 +483,14 @@
         </article>
         <article class="page-card report-kpi">
             <div class="report-kpi-heading">
+                Deposit refunds
+                <span class="report-kpi-icon"><i class="fas fa-arrow-rotate-left" aria-hidden="true"></i></span>
+            </div>
+            <strong class="report-kpi-value">KES {{ number_format($totals['deposit_refunds'], 2) }}</strong>
+            <p class="report-kpi-note">Paid in period</p>
+        </article>
+        <article class="page-card report-kpi">
+            <div class="report-kpi-heading">
                 Active tenants
                 <span class="report-kpi-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
             </div>
@@ -498,13 +511,14 @@
             @if(collect($monthlySeries)->sum('rent_billed') +
                 collect($monthlySeries)->sum('rent_collected') +
                 collect($monthlySeries)->sum('expenses') +
-                collect($monthlySeries)->sum('deposits') > 0)
+                collect($monthlySeries)->sum('deposits') +
+                collect($monthlySeries)->sum('deposit_refunds') > 0)
                 <div class="report-month-chart {{ count($monthlySeries) === 1 ? 'single-month' : '' }}">
                     @foreach($monthlySeries as $monthData)
                         <div class="report-month-column">
                             <div class="report-month-bars"
                                  role="img"
-                                 aria-label="{{ $monthData['label'] }}: rent billed KES {{ number_format($monthData['rent_billed'], 2) }}, rent collected KES {{ number_format($monthData['rent_collected'], 2) }}, expenses KES {{ number_format($monthData['expenses'], 2) }}, deposit receipts KES {{ number_format($monthData['deposits'], 2) }}">
+                                 aria-label="{{ $monthData['label'] }}: rent billed KES {{ number_format($monthData['rent_billed'], 2) }}, rent collected KES {{ number_format($monthData['rent_collected'], 2) }}, expenses KES {{ number_format($monthData['expenses'], 2) }}, deposit receipts KES {{ number_format($monthData['deposits'], 2) }}, deposit refunds KES {{ number_format($monthData['deposit_refunds'], 2) }}">
                                 <span class="report-month-bar report-bar-billed"
                                       title="Rent billed: KES {{ number_format($monthData['rent_billed'], 2) }}"
                                       style="height:{{ $monthData['rent_billed'] > 0 ? max(($monthData['rent_billed'] / $cashflowMax) * 100, 2) : 0 }}%"></span>
@@ -517,6 +531,9 @@
                                 <span class="report-month-bar report-bar-deposits"
                                       title="Deposit receipts: KES {{ number_format($monthData['deposits'], 2) }}"
                                       style="height:{{ $monthData['deposits'] > 0 ? max(($monthData['deposits'] / $cashflowMax) * 100, 2) : 0 }}%"></span>
+                                <span class="report-month-bar report-bar-refunds"
+                                      title="Deposit refunds: KES {{ number_format($monthData['deposit_refunds'], 2) }}"
+                                      style="height:{{ $monthData['deposit_refunds'] > 0 ? max(($monthData['deposit_refunds'] / $cashflowMax) * 100, 2) : 0 }}%"></span>
                             </div>
                             <span class="report-month-label">{{ $monthData['label'] }}</span>
                         </div>
@@ -527,6 +544,7 @@
                     <span class="report-legend-item"><i class="report-legend-dot report-bar-collected"></i>Rent collected</span>
                     <span class="report-legend-item"><i class="report-legend-dot report-bar-expenses"></i>Expenses</span>
                     <span class="report-legend-item"><i class="report-legend-dot report-bar-deposits"></i>Deposit receipts</span>
+                    <span class="report-legend-item"><i class="report-legend-dot report-bar-refunds"></i>Deposit refunds</span>
                 </div>
             @else
                 <div class="report-empty">No cash activity was recorded for {{ $periodLabel }}.</div>

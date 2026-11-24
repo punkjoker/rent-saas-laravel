@@ -9,6 +9,7 @@ use App\Models\Property;
 use App\Models\RentCharge;
 use App\Models\RentPayment;
 use App\Models\Tenancy;
+use App\Models\TenancyReconciliation;
 use App\Services\RentPaymentLedger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -60,6 +61,7 @@ class ReportController extends Controller
                 'rent_collected' => 0.0,
                 'expenses' => 0.0,
                 'deposits' => 0.0,
+                'deposit_refunds' => 0.0,
             ];
         }
 
@@ -138,6 +140,24 @@ class ReportController extends Controller
             $monthKey = $deposit->paid_at->format('Y-m');
             if (isset($monthlySeries[$monthKey])) {
                 $monthlySeries[$monthKey]['deposits'] += (float) $deposit->amount;
+            }
+        }
+
+        $periodRefunds = TenancyReconciliation::whereNotNull('refunded_at')
+            ->whereBetween('refunded_at', [
+                $periodStart->copy()->startOfDay(),
+                $periodEndOfDay,
+            ])
+            ->whereHas('tenancy', fn ($query) => $query
+                ->where('landlord_id', $landlordId))
+            ->with('tenancy:id,property_id')
+            ->get();
+
+        foreach ($periodRefunds as $refund) {
+            $monthKey = $refund->refunded_at->format('Y-m');
+            if (isset($monthlySeries[$monthKey])) {
+                $monthlySeries[$monthKey]['deposit_refunds'] +=
+                    (float) $refund->refund_amount;
             }
         }
 
@@ -239,6 +259,7 @@ class ReportController extends Controller
             'rent_collected' => collect($monthlySeries)->sum('rent_collected'),
             'expenses' => collect($monthlySeries)->sum('expenses'),
             'deposits' => collect($monthlySeries)->sum('deposits'),
+            'deposit_refunds' => collect($monthlySeries)->sum('deposit_refunds'),
         ];
 
         $categoryTotals = $expenses->groupBy('category')
