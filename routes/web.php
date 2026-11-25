@@ -17,6 +17,9 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\PropertyListingController;
 use App\Http\Controllers\PublicPropertyListingController;
+use App\Http\Controllers\PublicVacancyController;
+use App\Http\Controllers\VacancyController;
+use App\Http\Controllers\AdminVacancyController;
 
 // Public homepage
 Route::get('/', [AuthController::class, 'home'])
@@ -49,6 +52,10 @@ Route::post('/tenant-payments/{token}', [RentPaymentController::class, 'submitPu
 
 Route::get('/rentals/{listing:slug}', [PublicPropertyListingController::class, 'show'])
     ->name('rentals.show');
+
+Route::get('/vacancies/{vacancy}', [PublicVacancyController::class, 'show'])
+    ->whereNumber('vacancy')
+    ->name('vacancies.show');
 
 Route::get('/tenant-payments/{token}/receipts/{payment}', [RentPaymentController::class, 'publicReceipt'])
     ->where('token', '[A-Za-z0-9]{64}')
@@ -88,6 +95,28 @@ Route::prefix('manage')->name('admin.')->group(function () {
         Route::patch('/listings/{listing}/review', [AdminController::class, 'reviewListing'])
             ->whereNumber('listing')
             ->name('listings.review');
+        Route::get('/vacancies', [AdminVacancyController::class, 'index'])
+            ->name('vacancies');
+        Route::get('/vacancies/create', [AdminVacancyController::class, 'create'])
+            ->name('vacancies.create');
+        Route::post('/vacancies', [AdminVacancyController::class, 'store'])
+            ->name('vacancies.store');
+        Route::get('/vacancies/{vacancy}/edit', [AdminVacancyController::class, 'edit'])
+            ->whereNumber('vacancy')
+            ->name('vacancies.edit');
+        Route::put('/vacancies/{vacancy}', [AdminVacancyController::class, 'update'])
+            ->whereNumber('vacancy')
+            ->name('vacancies.update');
+        Route::patch('/vacancies/{vacancy}/toggle', [AdminVacancyController::class, 'toggle'])
+            ->whereNumber('vacancy')
+            ->name('vacancies.toggle');
+        Route::delete('/vacancies/{vacancy}', [AdminVacancyController::class, 'destroy'])
+            ->whereNumber('vacancy')
+            ->name('vacancies.destroy');
+        Route::delete('/vacancies/{vacancy}/images/{image}', [AdminVacancyController::class, 'destroyImage'])
+            ->whereNumber('vacancy')
+            ->whereNumber('image')
+            ->name('vacancies.images.destroy');
     });
 });
 
@@ -119,6 +148,12 @@ Route::middleware(['auth', 'landlord.approved'])->group(function () {
         ->whereNumber('listing')
         ->whereNumber('image')
         ->name('property-listings.images.destroy');
+
+    Route::get('/vacancies', [VacancyController::class, 'index'])
+        ->name('landlord-vacancies.index');
+    Route::post('/units/{unit}/vacancy', [VacancyController::class, 'toggle'])
+        ->whereNumber('unit')
+        ->name('landlord-vacancies.toggle');
 
     Route::get('/properties/create', [PropertyController::class, 'create'])
         ->name('properties.create');

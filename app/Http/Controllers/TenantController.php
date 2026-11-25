@@ -249,6 +249,10 @@ class TenantController extends Controller
                     'status' => 'active',
                 ]);
 
+                $unit->vacancyListing()->where('status', 'published')->update([
+                    'status' => 'unpublished',
+                    'published_at' => null,
+                ]);
                 $unit->update(['status' => 'occupied']);
             }
 

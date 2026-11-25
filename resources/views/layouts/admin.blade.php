@@ -61,6 +61,7 @@
             <a href="{{ route('admin.subscriptions') }}" class="admin-nav-link {{ request()->routeIs('admin.subscriptions') ? 'active' : '' }}">Subscriptions</a>
             <a href="{{ route('admin.properties') }}" class="admin-nav-link {{ request()->routeIs('admin.properties') ? 'active' : '' }}">Properties</a>
             <a href="{{ route('admin.listings') }}" class="admin-nav-link {{ request()->routeIs('admin.listings') ? 'active' : '' }}">Property listings</a>
+            <a href="{{ route('admin.vacancies') }}" class="admin-nav-link {{ request()->routeIs('admin.vacancies*') ? 'active' : '' }}">Vacancies</a>
         </nav>
     </aside>
     <main class="admin-main">

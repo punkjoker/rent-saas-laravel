@@ -157,7 +157,12 @@ class PropertyController extends Controller
         $unitNumberSuffixStart = strlen($property->unit_prefix ?? '') + 1;
 
         $units = $property->units()
-            ->with('currentTenancy.tenant')
+            ->with([
+                'currentTenancy.tenant',
+                'vacancyListing',
+                'tenancies' => fn ($query) => $query
+                    ->whereIn('status', ['active', 'upcoming']),
+            ])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $query->where('unit_number', 'like', '%' . $request->search . '%');
             })

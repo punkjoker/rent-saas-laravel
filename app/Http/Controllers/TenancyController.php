@@ -60,6 +60,12 @@ class TenancyController extends Controller
                 $tenancy->update(['status' => 'active']);
 
                 $tenancy->unit()->update(['status' => 'occupied']);
+                $tenancy->unit->vacancyListing()
+                    ->where('status', 'published')
+                    ->update([
+                        'status' => 'unpublished',
+                        'published_at' => null,
+                    ]);
             }
 
             $ending = Tenancy::where('landlord_id', $landlordId)
@@ -333,6 +339,11 @@ class TenancyController extends Controller
                 'rent_due_day' => $validated['rent_due_day'],
                 'status' => $status,
                 'notes' => $validated['notes'] ?? null,
+            ]);
+
+            $unit->vacancyListing()->where('status', 'published')->update([
+                'status' => 'unpublished',
+                'published_at' => null,
             ]);
 
             if ($status === 'active') {

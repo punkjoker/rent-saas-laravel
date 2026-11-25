@@ -394,6 +394,71 @@
             text-decoration: none;
         }
 
+        .vacancy-filter {
+            display: flex;
+            max-width: 680px;
+            gap: 10px;
+            margin: -20px auto 28px;
+        }
+
+        .vacancy-filter input {
+            min-width: 0;
+            flex: 1;
+            padding: 12px 14px;
+            border: 1px solid #dfe7e1;
+            border-radius: 9px;
+            background: white;
+            font: inherit;
+        }
+
+        .vacancy-filter button,
+        .vacancy-filter a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 15px;
+            border: 0;
+            border-radius: 9px;
+            color: white;
+            background: var(--primary);
+            font: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .vacancy-filter a {
+            color: #30483b;
+            background: #e8eee9;
+        }
+
+        .vacancy-count {
+            display: inline-flex;
+            margin-top: 9px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            color: #176b55;
+            background: #e5f4eb;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        @media(max-width: 520px) {
+            .vacancy-filter {
+                flex-wrap: wrap;
+            }
+
+            .vacancy-filter input {
+                flex-basis: 100%;
+            }
+
+            .vacancy-filter button,
+            .vacancy-filter a {
+                flex: 1;
+            }
+        }
+
         /* AUTH SECTION */
 
         .auth-section {
@@ -640,6 +705,7 @@
             <a href="#features">Features</a>
             <a href="#pricing">Pricing</a>
             <a href="#properties">Properties</a>
+            <a href="#vacancies">Vacancies</a>
             <a href="#about">About</a>
             <a href="#register">Get Started</a>
         </nav>
@@ -769,6 +835,68 @@
             </div>
         @else
             <p style="text-align:center;color:var(--muted)">No property advertisements are available right now.</p>
+        @endif
+    </div>
+</section>
+
+<section class="public-listings-section" id="vacancies">
+    <div class="container">
+        <div class="section-heading">
+            <span class="eyebrow">Available now</span>
+            <h2>Vacant homes and apartments</h2>
+            <p>Browse current vacancies from landlords and the Pango team.</p>
+        </div>
+
+        <form method="GET" action="{{ route('home') }}#vacancies" class="vacancy-filter">
+            <input type="search" name="place" value="{{ $place }}"
+                   placeholder="Filter by town, county or place name">
+            <button type="submit">Find vacancies</button>
+            @if($place !== '')
+                <a href="{{ route('home') }}#vacancies">Clear</a>
+            @endif
+        </form>
+
+        @if($vacancyCards->isNotEmpty())
+            <div class="public-listings-grid">
+                @foreach($vacancyCards as $card)
+                    <article class="public-listing-card">
+                        @if($card['image'])
+                            <img src="{{ Storage::disk('public')->url($card['image']) }}"
+                                 alt="{{ $card['title'] }}">
+                        @else
+                            <div class="public-listing-placeholder">Vacancy available</div>
+                        @endif
+                        <div class="public-listing-card-body">
+                            <h3>{{ $card['title'] }}</h3>
+                            <p class="public-listing-location">
+                                {{ $card['place'] ?: $card['address'] ?: 'Location available on enquiry' }}
+                            </p>
+                            <p class="public-listing-price">
+                                @if($card['rent_min'] === $card['rent_max'])
+                                    KES {{ number_format($card['rent_min'], 2) }} / month
+                                @else
+                                    KES {{ number_format($card['rent_min'], 2) }}–{{ number_format($card['rent_max'], 2) }} / month
+                                @endif
+                            </p>
+                            <span class="vacancy-count">
+                                {{ $card['count'] }} {{ $card['count'] === 1 ? 'vacancy' : 'vacancies' }}
+                            </span>
+                            <div class="public-listing-facts">
+                                @if($card['bedrooms'] !== null)<span>{{ $card['bedrooms'] }} bedrooms</span>@endif
+                                @if($card['bathrooms'] !== null)<span>{{ $card['bathrooms'] }} bathrooms</span>@endif
+                                @if($card['unit_type'])<span>{{ $card['unit_type'] }}</span>@endif
+                            </div>
+                            <a href="{{ route('vacancies.show', $card['id']) }}" class="public-listing-link">
+                                View vacancy details
+                            </a>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        @else
+            <p style="text-align:center;color:var(--muted)">
+                {{ $place !== '' ? 'No vacancies found for this place. Try a nearby town or county.' : 'No vacancies are currently published.' }}
+            </p>
         @endif
     </div>
 </section>

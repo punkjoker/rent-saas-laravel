@@ -11,6 +11,7 @@ use App\Models\RentPayment;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
 use App\Models\Unit;
+use App\Services\VacancyMarketplace;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +20,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function home()
+    public function home(Request $request, VacancyMarketplace $vacancyMarketplace)
     {
+        $filters = $request->validate([
+            'place' => ['nullable', 'string', 'max:100'],
+        ]);
         $plans = SubscriptionPlan::where('is_active', true)
             ->where('slug', '!=', 'free-trial')
             ->orderBy('sort_order')
@@ -36,8 +40,15 @@ class AuthController extends Controller
             ->latest('reviewed_at')
             ->take(6)
             ->get();
+        $place = trim($filters['place'] ?? '');
+        $vacancyCards = $vacancyMarketplace->cards($place);
 
-        return view('welcome', compact('plans', 'publicListings'));
+        return view('welcome', compact(
+            'plans',
+            'publicListings',
+            'vacancyCards',
+            'place'
+        ));
     }
 
     /**

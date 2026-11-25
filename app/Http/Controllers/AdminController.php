@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionExtension;
 use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
+use App\Models\VacancyListing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,9 @@ class AdminController extends Controller
             'properties' => Property::count(),
             'active_subscriptions' => Subscription::whereIn('status', ['trial', 'active'])->count(),
             'pending_listings' => PropertyListing::where('status', 'pending')->count(),
+            'published_vacancies' => VacancyListing::where('source', 'admin')
+                ->where('status', 'published')
+                ->count(),
             'income' => (float) SubscriptionPayment::whereIn(
                 'status',
                 self::SUCCESSFUL_PAYMENT_STATUSES

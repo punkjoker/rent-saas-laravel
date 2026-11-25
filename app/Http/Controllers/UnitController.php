@@ -58,6 +58,13 @@ class UnitController extends Controller
 
         $unit->update($validated);
 
+        if ($validated['status'] !== 'vacant') {
+            $unit->vacancyListing()->where('status', 'published')->update([
+                'status' => 'unpublished',
+                'published_at' => null,
+            ]);
+        }
+
         return redirect()
             ->route('properties.show', $unit->property_id)
             ->with('success', 'Unit updated successfully.');

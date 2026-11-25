@@ -45,4 +45,9 @@ class Unit extends Model
             ->where('status', 'active')
             ->latestOfMany();
     }
+
+    public function vacancyListing(): HasOne
+    {
+        return $this->hasOne(VacancyListing::class);
+    }
 }

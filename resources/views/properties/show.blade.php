@@ -209,11 +209,25 @@
                             </td>
 
                             <td>
-                                <a href="{{ route('units.edit', $unit) }}"
-                                   class="btn btn-secondary"
-                                   style="padding:8px 12px;">
-                                    Edit
-                                </a>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                    <a href="{{ route('units.edit', $unit) }}"
+                                       class="btn btn-secondary"
+                                       style="padding:8px 12px;">
+                                        Edit
+                                    </a>
+                                    @if($unit->status === 'vacant' && $unit->tenancies->isEmpty())
+                                        <form method="POST" action="{{ route('landlord-vacancies.toggle', $unit) }}">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="btn {{ $unit->vacancyListing?->status === 'published' ? 'btn-danger' : 'btn-primary' }}"
+                                                    style="padding:8px 12px;">
+                                                {{ $unit->vacancyListing?->status === 'published' ? 'Unpublish' : 'Post vacancy' }}
+                                            </button>
+                                        </form>
+                                    @elseif($unit->vacancyListing)
+                                        <span class="text-xs text-gray-500">Unpublished when occupied</span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
 

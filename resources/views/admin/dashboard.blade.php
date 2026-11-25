@@ -15,6 +15,7 @@
     <article class="admin-card admin-stat"><span>Subscription income</span><strong>KES {{ number_format($stats['income'], 0) }}</strong></article>
     <article class="admin-card admin-stat"><span>Pending accounts</span><strong>{{ number_format($stats['pending_landlords']) }}</strong></article>
     <article class="admin-card admin-stat"><span>Listings awaiting review</span><strong>{{ number_format($stats['pending_listings']) }}</strong></article>
+    <article class="admin-card admin-stat"><span>Admin vacancies published</span><strong>{{ number_format($stats['published_vacancies']) }}</strong></article>
     <article class="admin-card admin-stat"><span>Most subscribed package</span><strong style="font-size:17px">{{ $mostSubscribedPlan?->name ?? 'No plans' }}</strong></article>
 </section>
 
@@ -55,6 +56,7 @@
 <section class="admin-card admin-actions">
     <a class="admin-button" href="{{ route('admin.accounts') }}">Review landlord accounts</a>
     <a class="admin-button" href="{{ route('admin.listings') }}">Review property listings</a>
+    <a class="admin-button" href="{{ route('admin.vacancies') }}">Manage public vacancies</a>
     <a class="admin-button admin-button-neutral" href="{{ route('admin.subscriptions') }}">Manage subscriptions</a>
 </section>
 @endsection

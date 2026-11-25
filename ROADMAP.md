@@ -6,13 +6,13 @@
 - [x] Track deposit refunds through reconciliation, show pending/refunded status, and include completed refunds in reports.
 - [x] Let landlords advertise properties with photos; publish only listings approved by an administrator.
 - [x] Add a protected administrator portal for subscriptions, subscription extensions, landlord approvals, property-listing moderation, portfolio counts, and analytics.
+- [x] Add a public, place-filterable vacancy marketplace with standalone admin posts and grouped landlord unit vacancies.
+- [x] Automatically hide and unpublish landlord vacancy posts when a unit becomes occupied or otherwise unavailable; allow manual unpublishing.
 
-## Ongoing delivery order
+## Next priorities
 
-1. Rent due-date status and arrears visibility.
-2. Deposit refund recording and reporting.
-3. Landlord property advertisements and public approved listings.
-4. Administrator authentication, account/listing moderation, subscription extensions, and analytics.
+1. Gather landlord and renter feedback on the vacancy listing flow.
+2. Prioritize follow-up improvements based on marketplace usage and feedback.
 
 ## Operational notes
 

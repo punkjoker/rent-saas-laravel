@@ -483,6 +483,11 @@
             <i class="fas fa-bullhorn"></i>
             <span>Advertise Property</span>
         </a>
+        <a href="{{ route('landlord-vacancies.index') }}"
+           class="nav-link {{ request()->routeIs('landlord-vacancies.*') ? 'active' : '' }}">
+            <i class="fas fa-door-open"></i>
+            <span>Vacancies</span>
+        </a>
         <a href="{{ route('tenants.index') }}"
            class="nav-link {{ request()->routeIs('tenants.*') ? 'active' : '' }}">
             <i class="fas fa-users"></i>

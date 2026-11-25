@@ -38,7 +38,10 @@
 <header class="public-header">
     <div class="public-header-inner">
         <a href="{{ route('home') }}" class="public-logo">PANGO<span>.</span></a>
-        <a href="{{ route('home') }}#properties" class="public-home-link">Browse properties</a>
+        <div style="display:flex;gap:18px;align-items:center">
+            <a href="{{ route('home') }}#properties" class="public-home-link">Properties</a>
+            <a href="{{ route('home') }}#vacancies" class="public-home-link">Vacancies</a>
+        </div>
     </div>
 </header>
 @yield('content')

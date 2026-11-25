@@ -48,4 +48,9 @@ class Property extends Model
     {
         return $this->hasOne(PropertyListing::class);
     }
+
+    public function vacancyListings(): HasMany
+    {
+        return $this->hasMany(VacancyListing::class);
+    }
 }
