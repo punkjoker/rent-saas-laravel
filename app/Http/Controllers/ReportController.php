@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Accommodation;
+use App\Models\AccommodationBooking;
 use App\Models\DepositPayment;
 use App\Models\Expense;
 use App\Models\Landlord;
@@ -31,8 +33,10 @@ class ReportController extends Controller
         $validated = $request->validate([
             'month' => ['nullable', 'integer', 'between:1,12'],
             'year' => ['nullable', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
+            'property_id' => ['nullable', 'integer'],
         ]);
         $landlordId = $this->landlordId();
+        $propertyId = isset($validated['property_id']) ? (int) $validated['property_id'] : null;
         $year = (int) ($validated['year'] ?? now()->year);
         $month = isset($validated['month']) ? (int) $validated['month'] : null;
 
@@ -69,8 +73,15 @@ class ReportController extends Controller
             ->withCount('units')
             ->orderBy('property_name')
             ->get();
+        abort_if(
+            $propertyId && ! $properties->contains('id', $propertyId),
+            404
+        );
+        $reportProperties = $propertyId
+            ? $properties->where('id', $propertyId)->values()
+            : $properties;
         $propertyMetrics = [];
-        foreach ($properties as $property) {
+        foreach ($reportProperties as $property) {
             $propertyMetrics[$property->id] = [
                 'name' => $property->property_name,
                 'units' => (int) $property->units_count,
@@ -89,7 +100,9 @@ class ReportController extends Controller
             $periodEndMonth,
         ])
             ->whereHas('tenancy', fn ($query) => $query
-                ->where('landlord_id', $landlordId))
+                ->where('landlord_id', $landlordId)
+                ->when($propertyId, fn ($tenancyQuery) => $tenancyQuery
+                    ->where('property_id', $propertyId)))
             ->with('tenancy:id,property_id')
             ->get();
 
@@ -111,7 +124,9 @@ class ReportController extends Controller
             $periodEndOfDay,
         ])
             ->whereHas('tenancy', fn ($query) => $query
-                ->where('landlord_id', $landlordId))
+                ->where('landlord_id', $landlordId)
+                ->when($propertyId, fn ($tenancyQuery) => $tenancyQuery
+                    ->where('property_id', $propertyId)))
             ->with('tenancy:id,property_id')
             ->get();
 
@@ -133,7 +148,9 @@ class ReportController extends Controller
             $periodEndOfDay,
         ])
             ->whereHas('tenancy', fn ($query) => $query
-                ->where('landlord_id', $landlordId))
+                ->where('landlord_id', $landlordId)
+                ->when($propertyId, fn ($tenancyQuery) => $tenancyQuery
+                    ->where('property_id', $propertyId)))
             ->get();
 
         foreach ($periodDeposits as $deposit) {
@@ -149,7 +166,9 @@ class ReportController extends Controller
                 $periodEndOfDay,
             ])
             ->whereHas('tenancy', fn ($query) => $query
-                ->where('landlord_id', $landlordId))
+                ->where('landlord_id', $landlordId)
+                ->when($propertyId, fn ($tenancyQuery) => $tenancyQuery
+                    ->where('property_id', $propertyId)))
             ->with('tenancy:id,property_id')
             ->get();
 
@@ -162,6 +181,7 @@ class ReportController extends Controller
         }
 
         $expenses = Expense::where('landlord_id', $landlordId)
+            ->when($propertyId, fn ($query) => $query->where('property_id', $propertyId))
             ->whereBetween('expense_date', [$periodStartDate, $periodEndDate])
             ->orderBy('expense_date')
             ->get();
@@ -174,6 +194,7 @@ class ReportController extends Controller
         }
 
         $balanceTenancies = Tenancy::where('landlord_id', $landlordId)
+            ->when($propertyId, fn ($query) => $query->where('property_id', $propertyId))
             ->whereDate('start_date', '<=', $periodEndDate)
             ->with([
                 'rentCharges' => fn ($query) => $query
@@ -227,9 +248,9 @@ class ReportController extends Controller
         }
 
         $activeAtPeriodEnd = $balanceTenancies->filter(function ($tenancy) use ($periodEndDate) {
-            return (!$tenancy->ended_at ||
+            return (! $tenancy->ended_at ||
                     $tenancy->ended_at->toDateString() >= $periodEndDate) &&
-                (!$tenancy->lease_end_date ||
+                (! $tenancy->lease_end_date ||
                     $tenancy->lease_end_date->toDateString() >= $periodEndDate);
         });
         foreach ($activeAtPeriodEnd->groupBy('property_id') as $propertyId => $tenancies) {
@@ -242,14 +263,16 @@ class ReportController extends Controller
         }
 
         $upcomingTenancies = Tenancy::where('landlord_id', $landlordId)
+            ->when($propertyId, fn ($query) => $query->where('property_id', $propertyId))
             ->where('status', 'upcoming')
             ->whereDate('start_date', '>', $periodEndDate)
             ->count();
         $vacatedDuringPeriod = Tenancy::where('landlord_id', $landlordId)
+            ->when($propertyId, fn ($query) => $query->where('property_id', $propertyId))
             ->where('status', 'ended')
             ->whereBetween('ended_at', [$periodStartDate, $periodEndDate])
             ->count();
-        $totalUnits = (int) $properties->sum('units_count');
+        $totalUnits = (int) $reportProperties->sum('units_count');
         $occupiedUnits = $activeAtPeriodEnd->pluck('unit_id')->unique()->count();
         $availableUnits = max($totalUnits - $occupiedUnits, 0);
 
@@ -281,6 +304,72 @@ class ReportController extends Controller
         ]);
         $years = range(2000, now()->year + 1);
         $activeTenantCount = $activeAtPeriodEnd->pluck('tenant_id')->unique()->count();
+        $accommodations = Accommodation::where('landlord_id', $landlordId)
+            ->when($propertyId, fn ($query) => $query->where('property_id', $propertyId))
+            ->get(['id', 'price_per_night', 'clicks_count', 'status']);
+        $bookingQuery = AccommodationBooking::whereIn(
+            'accommodation_id',
+            $accommodations->pluck('id')
+        )
+            ->where('status', 'confirmed')
+            ->where('check_in', '<', $periodEnd->copy()->addDay()->toDateString())
+            ->where('check_out', '>', $periodStartDate)
+            ->with('accommodation:id,price_per_night');
+        $confirmedBookings = $bookingQuery->get();
+        $confirmedStayRevenue = 0.0;
+        $projectionBasisRevenue = 0.0;
+        $confirmedStayNights = 0;
+        $elapsedEnd = $periodEnd->lessThan(now()) ? $periodEnd->copy() : now()->copy();
+        $elapsedDays = $periodStart->greaterThan(now())
+            ? 0
+            : $periodStart->copy()->startOfDay()->diffInDays($elapsedEnd->startOfDay()) + 1;
+        $projectionEnd = $elapsedDays > 0
+            ? $elapsedEnd->copy()->addDay()->startOfDay()
+            : $periodStart->copy()->startOfDay();
+        foreach ($confirmedBookings as $booking) {
+            $bookingStart = $booking->check_in->copy()->startOfDay();
+            $stayStart = $bookingStart->greaterThan($periodStart)
+                ? $bookingStart
+                : $periodStart->copy()->startOfDay();
+            $bookingEnd = $booking->check_out->copy()->startOfDay();
+            $stayEnd = $bookingEnd->lessThan($periodEnd->copy()->addDay())
+                ? $bookingEnd
+                : $periodEnd->copy()->addDay()->startOfDay();
+            $nights = max($stayStart->diffInDays($stayEnd), 0);
+            $confirmedStayNights += $nights;
+            $nightlyRate = (float) $booking->accommodation->price_per_night;
+            $confirmedStayRevenue += $nights * $nightlyRate;
+
+            $projectionStayEnd = $bookingEnd->lessThan($projectionEnd)
+                ? $bookingEnd
+                : $projectionEnd;
+            if ($projectionStayEnd->greaterThan($stayStart)) {
+                $projectionBasisRevenue += $stayStart->diffInDays($projectionStayEnd) * $nightlyRate;
+            }
+        }
+        $pendingStayBookings = AccommodationBooking::whereIn(
+            'accommodation_id',
+            $accommodations->pluck('id')
+        )
+            ->where('status', 'pending')
+            ->whereBetween('created_at', [$periodStart, $periodEndOfDay])
+            ->count();
+        $periodDays = $periodStart->diffInDays($periodEnd->copy()->addDay());
+        $accommodationProjection = $elapsedDays > 0
+            ? $projectionBasisRevenue / $elapsedDays * $periodDays
+            : 0;
+        $accommodationReport = [
+            'listings' => $accommodations->count(),
+            'published' => $accommodations->where('status', 'published')->count(),
+            'clicks' => (int) $accommodations->sum('clicks_count'),
+            'confirmed_bookings' => $confirmedBookings->count(),
+            'pending_bookings' => $pendingStayBookings,
+            'confirmed_nights' => $confirmedStayNights,
+            'confirmed_revenue' => round($confirmedStayRevenue, 2),
+            'projected_revenue' => round($accommodationProjection, 2),
+            'projection_days' => $elapsedDays,
+            'period_days' => $periodDays,
+        ];
 
         return view('reports.index', compact(
             'year',
@@ -303,7 +392,7 @@ class ReportController extends Controller
             'vacatedDuringPeriod',
             'totalUnits',
             'occupiedUnits',
-            'availableUnits'
+            'availableUnits', 'propertyId', 'accommodationReport'
         ));
     }
 }

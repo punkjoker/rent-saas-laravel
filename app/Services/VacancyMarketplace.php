@@ -9,8 +9,11 @@ use Illuminate\Support\Str;
 
 class VacancyMarketplace
 {
-    public function cards(?string $place = null): Collection
-    {
+    public function cards(
+        ?string $place = null,
+        ?float $minimumPrice = null,
+        ?float $maximumPrice = null
+    ): Collection {
         $listings = VacancyListing::query()
             ->where('status', 'published')
             ->where(function (Builder $query) {
@@ -49,6 +52,10 @@ class VacancyMarketplace
                     });
                 });
             })
+            ->when($minimumPrice !== null, fn (Builder $query) => $query
+                ->where('monthly_rent', '>=', $minimumPrice))
+            ->when($maximumPrice !== null, fn (Builder $query) => $query
+                ->where('monthly_rent', '<=', $maximumPrice))
             ->with([
                 'images',
                 'unit',

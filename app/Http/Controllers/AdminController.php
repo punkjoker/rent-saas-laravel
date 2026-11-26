@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Accommodation;
+use App\Models\AccommodationBooking;
+use App\Models\ContactMessage;
 use App\Models\Landlord;
 use App\Models\Property;
 use App\Models\PropertyListing;
@@ -9,6 +12,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionExtension;
 use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
+use App\Models\SupportMessage;
 use App\Models\VacancyListing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -64,18 +68,36 @@ class AdminController extends Controller
             'published_vacancies' => VacancyListing::where('source', 'admin')
                 ->where('status', 'published')
                 ->count(),
+            'published_accommodations' => Accommodation::where('status', 'published')->count(),
+            'accommodation_clicks' => (int) Accommodation::sum('clicks_count'),
+            'pending_accommodation_bookings' => AccommodationBooking::where('status', 'pending')->count(),
+            'new_contact_messages' => ContactMessage::where('status', 'new')->count(),
+            'unread_support_messages' => SupportMessage::where('sender_type', 'landlord')
+                ->whereNull('read_at')
+                ->count(),
             'income' => (float) SubscriptionPayment::whereIn(
                 'status',
                 self::SUCCESSFUL_PAYMENT_STATUSES
             )->sum('amount'),
         ];
+        $topAccommodations = Accommodation::with('landlord.user')
+            ->withCount([
+                'bookings',
+                'bookings as pending_bookings_count' => fn ($query) => $query
+                    ->where('status', 'pending'),
+                'bookings as confirmed_bookings_count' => fn ($query) => $query
+                    ->where('status', 'confirmed'),
+            ])
+            ->orderByDesc('clicks_count')
+            ->take(10)
+            ->get();
         $mostSubscribedPlan = $popularPlans->first();
 
         return view('admin.dashboard', compact(
             'stats',
             'incomeSeries',
             'popularPlans',
-            'mostSubscribedPlan'
+            'mostSubscribedPlan', 'topAccommodations'
         ));
     }
 

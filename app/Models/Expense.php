@@ -12,6 +12,7 @@ class Expense extends Model
 
     protected $fillable = [
         'landlord_id',
+        'property_id',
         'expense_date',
         'category',
         'amount',
@@ -27,5 +28,10 @@ class Expense extends Model
     public function landlord(): BelongsTo
     {
         return $this->belongsTo(Landlord::class);
+    }
+
+    public function property(): BelongsTo
+    {
+        return $this->belongsTo(Property::class);
     }
 }

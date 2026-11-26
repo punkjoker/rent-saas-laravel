@@ -139,6 +139,8 @@
         }
 
         .choose:hover { background: #105340; }
+            .checkout-form { display: grid; gap: 8px; margin-top: 12px; }
+            .checkout-form input { width: 100%; padding: 10px; border: 1px solid #dfe7e1; border-radius: 8px; }
 
         .history {
             background: white;
@@ -194,6 +196,11 @@
     @if(session('success'))
         <div class="notice success">{{ session('success') }}</div>
     @endif
+    @if($errors->any())
+        <div class="notice error">
+            @foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach
+        </div>
+    @endif
 
     <div class="current">
         <h3>Current Subscription</h3>
@@ -215,6 +222,12 @@
             <p>You do not currently have a subscription.</p>
         @endif
     </div>
+
+    @if($access && $access->expires_at->isFuture())
+        <div class="notice success">
+            Accommodation access is active until <strong>{{ $access->expires_at->format('d M Y') }}</strong>.
+        </div>
+    @endif
 
     <div class="plans">
 
@@ -241,17 +254,50 @@
                     @endforeach
                 </ul>
 
-                <a href="#"
-                   class="choose"
-                   onclick="alert('M-Pesa checkout will be enabled in the next integration step.'); return false;">
-                    Choose {{ $plan->name }}
-                </a>
+                <form method="POST" action="{{ route('billing.subscribe') }}" class="checkout-form">
+                    @csrf
+                    <input type="hidden" name="plan_id" value="{{ $plan->id }}">
+                    <input type="tel" name="phone" required
+                           placeholder="M-Pesa number (e.g. 0712345678)"
+                           value="{{ old('phone', $landlord->phone) }}">
+                    <button class="choose" type="submit">Pay & choose {{ $plan->name }}</button>
+                </form>
 
             </div>
 
         @endforeach
 
     </div>
+
+        <div class="current" id="accommodation-access" style="margin-top:30px">
+            <h2 style="margin-bottom:8px">Unlock Accommodations for your landlord account</h2>
+            <p>Publish stays and manage booking requests. Monthly renewals are initiated from your account; M-Pesa will prompt you to approve each payment.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:18px">
+                <form method="POST" action="{{ route('billing.accommodations') }}" class="checkout-form">
+                    @csrf
+                    <input type="hidden" name="period" value="monthly">
+                    <strong>KES 3,500 / month</strong>
+                    <input type="tel" name="phone" required placeholder="M-Pesa number"
+                           value="{{ old('phone', $landlord->phone) }}">
+                    <button class="choose" type="submit">Pay monthly</button>
+                </form>
+                <form method="POST" action="{{ route('billing.accommodations') }}" class="checkout-form">
+                    @csrf
+                    <input type="hidden" name="period" value="yearly">
+                    <strong>KES 33,600 / year <small>(20% off the monthly rate)</small></strong>
+                    <input type="tel" name="phone" required placeholder="M-Pesa number"
+                           value="{{ old('phone', $landlord->phone) }}">
+                    <button class="choose" type="submit">Pay yearly</button>
+                </form>
+            </div>
+            @unless(config('services.mpesa.consumer_key') && config('services.mpesa.consumer_secret') &&
+                config('services.mpesa.shortcode') && config('services.mpesa.passkey') &&
+                config('services.mpesa.callback_url') && config('services.mpesa.callback_token'))
+                <p style="margin-top:14px;color:#94620d;font-size:12px">
+                    M-Pesa checkout is not yet configured. Ask the administrator to configure Daraja credentials and a public HTTPS callback URL.
+                </p>
+            @endunless
+        </div>
 
     <div class="history">
 
@@ -280,7 +326,12 @@
                         </td>
                         <td>{{ strtoupper($payment->provider) }}</td>
                         <td>{{ $payment->mpesa_receipt_number ?? 'Pending' }}</td>
-                        <td>{{ ucfirst($payment->status) }}</td>
+                        <td>
+                            {{ ucfirst($payment->status) }}
+                            @if(($payment->metadata['purchase'] ?? null) === 'accommodation_addon')
+                                <small> · Accommodations {{ $payment->metadata['period'] ?? '' }}</small>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>

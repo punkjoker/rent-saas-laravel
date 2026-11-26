@@ -374,6 +374,14 @@
             <i class="fas fa-door-open"></i>
             <span>Vacancies</span>
         </a>
+        <a href="{{ $accommodationEnabled ? route('accommodations.index') : route('billing.plans').'#accommodation-access' }}"
+           class="nav-link {{ request()->routeIs('accommodations.*') ? 'active' : '' }}">
+            <i class="fas fa-bed"></i>
+            <span>Accommodations{{ $accommodationEnabled ? '' : ' · KSh 3,500' }}</span>
+            @if($accommodationEnabled && $unreadSupport)
+                <span style="float:right;border-radius:20px;background:#d5ae69;color:#142c24;padding:1px 6px;font-size:10px">{{ $unreadSupport }}</span>
+            @endif
+        </a>
 
         <a href="{{ route('tenants.index') }}"
            class="nav-link {{ request()->routeIs('tenants.*') ? 'active' : '' }}">
@@ -421,6 +429,14 @@
            class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
             <i class="fas fa-chart-pie"></i>
             <span>Reports</span>
+        </a>
+        <a href="{{ route('support.show') }}"
+           class="nav-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
+            <i class="fas fa-headset"></i>
+            <span>Tech Support</span>
+            @if($unreadSupport)
+                <span style="float:right;border-radius:20px;background:#d5ae69;color:#142c24;padding:1px 6px;font-size:10px">{{ $unreadSupport }}</span>
+            @endif
         </a>
         <a href="#" class="nav-link">
             <i class="fas fa-gear"></i>

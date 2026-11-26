@@ -22,12 +22,14 @@ class SubscriptionPayment extends Model
         'result_code',
         'result_description',
         'callback_payload',
+        'metadata',
         'paid_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'callback_payload' => 'array',
+        'metadata' => 'array',
         'paid_at' => 'datetime',
     ];
 

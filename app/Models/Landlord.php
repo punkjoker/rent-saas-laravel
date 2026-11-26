@@ -59,6 +59,16 @@ class Landlord extends Model
         return $this->hasMany(SubscriptionPayment::class);
     }
 
+    public function featureAccess(): HasMany
+    {
+        return $this->hasMany(LandlordFeatureAccess::class);
+    }
+
+    public function supportConversation(): HasOne
+    {
+        return $this->hasOne(SupportConversation::class);
+    }
+
     public function activeSubscription(): HasOne
     {
         return $this->hasOne(Subscription::class)

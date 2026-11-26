@@ -53,4 +53,9 @@ class Property extends Model
     {
         return $this->hasMany(VacancyListing::class);
     }
+
+    public function accommodations(): HasMany
+    {
+        return $this->hasMany(Accommodation::class);
+    }
 }

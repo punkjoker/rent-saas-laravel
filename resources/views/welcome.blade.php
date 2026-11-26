@@ -396,14 +396,17 @@
 
         .vacancy-filter {
             display: flex;
-            max-width: 680px;
+            max-width: 900px;
+            align-items: end;
             gap: 10px;
             margin: -20px auto 28px;
+            flex-wrap: wrap;
         }
 
         .vacancy-filter input {
             min-width: 0;
             flex: 1;
+            width: 130px;
             padding: 12px 14px;
             border: 1px solid #dfe7e1;
             border-radius: 9px;
@@ -428,6 +431,20 @@
             cursor: pointer;
         }
 
+        .vacancy-filter .filter-input {
+            display: grid;
+            min-width: 120px;
+            flex: 1;
+            gap: 5px;
+            color: #65756c;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .vacancy-filter .filter-input input {
+            width: 100%;
+        }
+
         .vacancy-filter a {
             color: #30483b;
             background: #e8eee9;
@@ -449,7 +466,11 @@
                 flex-wrap: wrap;
             }
 
-            .vacancy-filter input {
+            .vacancy-filter .filter-input {
+                flex-basis: calc(50% - 6px);
+            }
+
+            .vacancy-filter .filter-input:first-child {
                 flex-basis: 100%;
             }
 
@@ -706,6 +727,8 @@
             <a href="#pricing">Pricing</a>
             <a href="#properties">Properties</a>
             <a href="#vacancies">Vacancies</a>
+            <a href="#accommodations">Accommodations</a>
+            <a href="#contact">Contact</a>
             <a href="#about">About</a>
             <a href="#register">Get Started</a>
         </nav>
@@ -808,6 +831,23 @@
             <p>Browse rental properties advertised by landlords on Pango.</p>
         </div>
 
+        <form method="GET" action="{{ route('home') }}#properties" class="vacancy-filter">
+            <label class="filter-input">Place
+                <input type="search" name="property_place" value="{{ request('property_place') }}"
+                       placeholder="Town, county or address">
+            </label>
+            <label class="filter-input">Minimum monthly rent
+                <input type="number" name="property_min_price" min="0" step="1"
+                       value="{{ request('property_min_price') }}" placeholder="KES">
+            </label>
+            <label class="filter-input">Maximum monthly rent
+                <input type="number" name="property_max_price" min="0" step="1"
+                       value="{{ request('property_max_price') }}" placeholder="KES">
+            </label>
+            <button type="submit">Filter properties</button>
+            <a href="{{ route('home') }}#properties">Clear</a>
+        </form>
+
         @if($publicListings->isNotEmpty())
             <div class="public-listings-grid">
                 @foreach($publicListings as $listing)
@@ -848,12 +888,20 @@
         </div>
 
         <form method="GET" action="{{ route('home') }}#vacancies" class="vacancy-filter">
-            <input type="search" name="place" value="{{ $place }}"
-                   placeholder="Filter by town, county or place name">
+            <label class="filter-input">Place
+                <input type="search" name="place" value="{{ $place }}"
+                       placeholder="Town, county or place name">
+            </label>
+            <label class="filter-input">Minimum monthly rent
+                <input type="number" name="min_price" min="0" step="1"
+                       value="{{ request('min_price') }}" placeholder="KES">
+            </label>
+            <label class="filter-input">Maximum monthly rent
+                <input type="number" name="max_price" min="0" step="1"
+                       value="{{ request('max_price') }}" placeholder="KES">
+            </label>
             <button type="submit">Find vacancies</button>
-            @if($place !== '')
-                <a href="{{ route('home') }}#vacancies">Clear</a>
-            @endif
+            <a href="{{ route('home') }}#vacancies">Clear</a>
         </form>
 
         @if($vacancyCards->isNotEmpty())
@@ -897,6 +945,63 @@
             <p style="text-align:center;color:var(--muted)">
                 {{ $place !== '' ? 'No vacancies found for this place. Try a nearby town or county.' : 'No vacancies are currently published.' }}
             </p>
+        @endif
+    </div>
+</section>
+
+<section class="public-listings-section" id="accommodations">
+    <div class="container">
+        <div class="section-heading">
+            <span class="eyebrow">Short stays and furnished spaces</span>
+            <h2>Find accommodation</h2>
+            <p>Browse places to stay and send a booking request directly to the host.</p>
+        </div>
+
+        <form method="GET" action="{{ route('home') }}#accommodations" class="vacancy-filter">
+            <label class="filter-input">Place
+                <input type="search" name="stay_place" value="{{ request('stay_place') }}"
+                       placeholder="Town or address">
+            </label>
+            <label class="filter-input">Minimum price per night
+                <input type="number" name="stay_min_price" min="0" step="1"
+                       value="{{ request('stay_min_price') }}" placeholder="KES">
+            </label>
+            <label class="filter-input">Maximum price per night
+                <input type="number" name="stay_max_price" min="0" step="1"
+                       value="{{ request('stay_max_price') }}" placeholder="KES">
+            </label>
+            <button type="submit">Find accommodation</button>
+            <a href="{{ route('home') }}#accommodations">Clear</a>
+        </form>
+
+        @if($accommodations->isNotEmpty())
+            <div class="public-listings-grid">
+                @foreach($accommodations as $accommodation)
+                    <article class="public-listing-card">
+                        @if($accommodation->images->isNotEmpty())
+                            <img src="{{ Storage::disk('public')->url($accommodation->images->first()->image_path) }}"
+                                 alt="{{ $accommodation->title }}">
+                        @else
+                            <div class="public-listing-placeholder">Accommodation</div>
+                        @endif
+                        <div class="public-listing-card-body">
+                            <h3>{{ $accommodation->title }}</h3>
+                            <p class="public-listing-location">{{ $accommodation->place_name }}</p>
+                            <p class="public-listing-price">
+                                KES {{ number_format((float) $accommodation->price_per_night, 2) }} / night
+                            </p>
+                            <div class="public-listing-facts">
+                                <span>Up to {{ $accommodation->max_guests }} guests</span>
+                                @if($accommodation->bedrooms !== null)<span>{{ $accommodation->bedrooms }} bedrooms</span>@endif
+                            </div>
+                            <a href="{{ route('accommodations.public.show', $accommodation) }}"
+                               class="public-listing-link">View & request booking</a>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        @else
+            <p style="text-align:center;color:var(--muted)">No accommodations match those filters yet.</p>
         @endif
     </div>
 </section>
@@ -958,11 +1063,74 @@
                 <h3>Reports & Receipts</h3>
                 <p>Generate financial reports and share tenant receipts securely through links.</p>
             </div>
+            <div class="feature">
+                <div class="feature-icon">⌂</div>
+                <h3>Accommodation Listings</h3>
+                <p>Publish furnished stays with multiple photos, nightly pricing and location filters.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <h3>Booking Requests</h3>
+                <p>Receive date-based booking requests and confirm or decline them from your workspace.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">◷</div>
+                <h3>Portfolio & Stay Reports</h3>
+                <p>Review apartment performance, bookings, projected accommodation revenue and listing interest.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">☏</div>
+                <h3>Contact & Technical Support</h3>
+                <p>Contact the Pango team and message admin support from your landlord workspace.</p>
+            </div>
 
         </div>
 
     </div>
 
+</section>
+
+<section class="section" id="contact">
+    <div class="container">
+        <div class="section-heading">
+            <span class="eyebrow">We’re here to help</span>
+            <h2>Contact Pango</h2>
+            <p>Send a message to our team and we’ll follow up using your contact details.</p>
+        </div>
+        <div class="page-card" style="max-width:760px;margin:0 auto;">
+            @if(session('contact_success'))
+                <div class="alert alert-success">{{ session('contact_success') }}</div>
+            @endif
+            @if($errors->any())
+                <div class="alert alert-error">
+                    @foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach
+                </div>
+            @endif
+            <form method="POST" action="{{ route('contact.store') }}"
+                  style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+                @csrf
+                <label class="form-group">Name
+                    <input class="form-control" name="name" value="{{ old('name') }}" required maxlength="150">
+                </label>
+                <label class="form-group">Email
+                    <input class="form-control" name="email" type="email" value="{{ old('email') }}" required maxlength="255">
+                </label>
+                <label class="form-group">Phone (optional)
+                    <input class="form-control" name="phone" type="tel" value="{{ old('phone') }}" maxlength="30">
+                </label>
+                <label class="form-group">Subject
+                    <input class="form-control" name="subject" value="{{ old('subject') }}" required maxlength="200">
+                </label>
+                <label style="position:absolute;left:-10000px" aria-hidden="true">
+                    Website <input name="website" tabindex="-1" autocomplete="off">
+                </label>
+                <label class="form-group" style="grid-column:1/-1">Message
+                    <textarea class="form-control" name="message" rows="5" required minlength="10" maxlength="5000">{{ old('message') }}</textarea>
+                </label>
+                <button class="btn btn-primary" type="submit" style="grid-column:1/-1">Send message</button>
+            </form>
+        </div>
+    </div>
 </section>
 
 

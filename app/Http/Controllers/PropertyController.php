@@ -37,8 +37,16 @@ class PropertyController extends Controller
                 },
             ]);
 
-        if ($request->filled('search')) {
-            $search = $request->search;
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'place' => ['nullable', 'string', 'max:100'],
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => ['nullable', 'numeric', 'gte:min_price'],
+            'status' => ['nullable', 'in:active,inactive'],
+        ]);
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
 
             $query->where(function ($q) use ($search) {
                 $q->where('property_name', 'like', "%{$search}%")
@@ -47,10 +55,29 @@ class PropertyController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
+        if (! empty($filters['place'])) {
+            $place = $filters['place'];
+            $query->where(function ($placeQuery) use ($place) {
+                $placeQuery->where('town', 'like', "%{$place}%")
+                    ->orWhere('county', 'like', "%{$place}%")
+                    ->orWhere('address', 'like', "%{$place}%");
+            });
+        }
+
+        if (isset($filters['min_price']) || isset($filters['max_price'])) {
+            $query->whereHas('units', function ($unitQuery) use ($filters) {
+                $unitQuery
+                    ->when(isset($filters['min_price']), fn ($q) => $q
+                        ->where('monthly_rent', '>=', $filters['min_price']))
+                    ->when(isset($filters['max_price']), fn ($q) => $q
+                        ->where('monthly_rent', '<=', $filters['max_price']));
+            });
+        }
+
+        if (! empty($filters['status'])) {
             $query->where(
                 'is_active',
-                $request->status === 'active'
+                $filters['status'] === 'active'
             );
         }
 
@@ -128,7 +155,7 @@ class PropertyController extends Controller
 
             for ($i = 1; $i <= $validated['units_count']; $i++) {
                 $units[] = [
-                    'unit_number' => strtoupper($validated['unit_prefix']) . $i,
+                    'unit_number' => strtoupper($validated['unit_prefix']).$i,
                     'unit_type' => null,
                     'monthly_rent' => $validated['default_rent'],
                     'deposit_amount' => $validated['default_deposit'],
@@ -164,7 +191,7 @@ class PropertyController extends Controller
                     ->whereIn('status', ['active', 'upcoming']),
             ])
             ->when($request->filled('search'), function ($query) use ($request) {
-                $query->where('unit_number', 'like', '%' . $request->search . '%');
+                $query->where('unit_number', 'like', '%'.$request->search.'%');
             })
             ->when($request->filled('status'), function ($query) use ($request) {
                 $query->where('status', $request->status);
@@ -239,7 +266,7 @@ class PropertyController extends Controller
         );
 
         $property->update([
-            'is_active' => !$property->is_active,
+            'is_active' => ! $property->is_active,
         ]);
 
         return back()->with('success', 'Property status updated.');

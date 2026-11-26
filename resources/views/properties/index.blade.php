@@ -80,6 +80,15 @@
             style="flex:1;min-width:220px;"
         >
 
+        <input type="search" name="place" value="{{ request('place') }}"
+               placeholder="Filter by town or address" class="form-control"
+               style="min-width:180px;flex:1;">
+
+        <input type="number" name="min_price" min="0" step="1" value="{{ request('min_price') }}"
+               placeholder="Minimum rent" class="form-control" style="width:140px;">
+        <input type="number" name="max_price" min="0" step="1" value="{{ request('max_price') }}"
+               placeholder="Maximum rent" class="form-control" style="width:140px;">
+
         <select name="status" class="form-control" style="width:auto;min-width:140px;">
             <option value="">All statuses</option>
             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>

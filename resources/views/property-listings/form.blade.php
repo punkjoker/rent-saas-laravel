@@ -1,8 +1,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     @if(!$listing)
         <label class="block md:col-span-2">
-            <span class="text-sm font-semibold">Property</span>
-            <select name="property_id" required class="form-control mt-1">
+                <span class="text-sm font-semibold">Existing property (optional if creating a new one)</span>
+                <select name="property_id" class="form-control mt-1">
                 <option value="">Select a property</option>
                 @foreach($properties as $property)
                     <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
@@ -10,6 +10,22 @@
                     </option>
                 @endforeach
             </select>
+        </label>
+        <div class="md:col-span-2" style="text-align:center;color:#718078;font-size:12px">— or enter a new property —</div>
+        <label class="block">
+            <span class="text-sm font-semibold">New property name</span>
+            <input type="text" name="property_name" value="{{ old('property_name') }}"
+                   maxlength="255" class="form-control mt-1" placeholder="e.g. Palm Residency">
+        </label>
+        <label class="block">
+            <span class="text-sm font-semibold">Town (optional)</span>
+            <input type="text" name="property_town" value="{{ old('property_town') }}"
+                   maxlength="255" class="form-control mt-1">
+        </label>
+        <label class="block md:col-span-2">
+            <span class="text-sm font-semibold">Property address (optional)</span>
+            <input type="text" name="property_address" value="{{ old('property_address') }}"
+                   maxlength="255" class="form-control mt-1">
         </label>
     @else
         <div class="md:col-span-2 text-sm text-gray-600">
@@ -52,8 +68,30 @@
                min="0" max="50" class="form-control mt-1">
     </label>
     <label class="block md:col-span-2">
-        <span class="text-sm font-semibold">Photos (up to 8 total, JPG/PNG/WEBP, max 4 MB each)</span>
+        <span class="text-sm font-semibold">Photos (select up to 8 total, JPG/PNG/WEBP, max 4 MB each)</span>
         <input type="file" name="images[]" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-               class="form-control mt-1">
+               class="form-control mt-1" data-photo-input>
+        <small class="form-help" data-photo-count>Choose multiple files using Ctrl or Shift.</small>
     </label>
 </div>
+<script>
+    const propertySelect = document.querySelector('[name="property_id"]');
+    const propertyName = document.querySelector('[name="property_name"]');
+    if (propertySelect && propertyName) {
+        const syncPropertyChoice = () => {
+            propertySelect.required = !propertyName.value.trim();
+            propertyName.required = !propertySelect.value;
+        };
+        propertySelect.addEventListener('change', syncPropertyChoice);
+        propertyName.addEventListener('input', syncPropertyChoice);
+        syncPropertyChoice();
+    }
+
+    document.querySelectorAll('[data-photo-input]').forEach((input) => {
+        input.addEventListener('change', () => {
+            const count = input.files.length;
+            input.parentElement.querySelector('[data-photo-count]').textContent =
+                count ? `${count} photo${count === 1 ? '' : 's'} selected` : 'Choose multiple files using Ctrl or Shift.';
+        });
+    });
+</script>

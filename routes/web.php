@@ -1,25 +1,30 @@
 
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminInboxController;
+use App\Http\Controllers\AdminVacancyController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
-use App\Http\Controllers\PropertyController;
-use App\Http\Controllers\UnitController;
-use App\Http\Controllers\TenantController;
-use App\Http\Controllers\TenancyController;
-use App\Http\Controllers\RentChargeController;
-use App\Http\Controllers\RentPaymentController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\ExpenseController;
-use App\Http\Controllers\ReportController;
+use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyListingController;
+use App\Http\Controllers\PublicAccommodationController;
 use App\Http\Controllers\PublicPropertyListingController;
 use App\Http\Controllers\PublicVacancyController;
+use App\Http\Controllers\RentChargeController;
+use App\Http\Controllers\RentPaymentController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SupportController;
+use App\Http\Controllers\TenancyController;
+use App\Http\Controllers\TenantController;
+use App\Http\Controllers\UnitController;
 use App\Http\Controllers\VacancyController;
-use App\Http\Controllers\AdminVacancyController;
+use Illuminate\Support\Facades\Route;
 
 // Public homepage
 Route::get('/', [AuthController::class, 'home'])
@@ -56,6 +61,17 @@ Route::get('/rentals/{listing:slug}', [PublicPropertyListingController::class, '
 Route::get('/vacancies/{vacancy}', [PublicVacancyController::class, 'show'])
     ->whereNumber('vacancy')
     ->name('vacancies.show');
+
+Route::get('/accommodation/{accommodation}', [PublicAccommodationController::class, 'show'])
+    ->whereNumber('accommodation')
+    ->name('accommodations.public.show');
+Route::post('/accommodation/{accommodation}/book', [PublicAccommodationController::class, 'book'])
+    ->whereNumber('accommodation')
+    ->middleware('throttle:6,1')
+    ->name('accommodations.public.book');
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('contact.store');
 
 Route::get('/tenant-payments/{token}/receipts/{payment}', [RentPaymentController::class, 'publicReceipt'])
     ->where('token', '[A-Za-z0-9]{64}')
@@ -117,6 +133,19 @@ Route::prefix('manage')->name('admin.')->group(function () {
             ->whereNumber('vacancy')
             ->whereNumber('image')
             ->name('vacancies.images.destroy');
+        Route::get('/messages/contact', [AdminInboxController::class, 'contacts'])
+            ->name('messages.contact');
+        Route::patch('/messages/contact/{message}', [AdminInboxController::class, 'updateContact'])
+            ->whereNumber('message')
+            ->name('messages.contact.update');
+        Route::get('/messages/support', [AdminInboxController::class, 'conversations'])
+            ->name('messages.support');
+        Route::get('/messages/support/{conversation}', [AdminInboxController::class, 'showConversation'])
+            ->whereNumber('conversation')
+            ->name('messages.support.show');
+        Route::post('/messages/support/{conversation}', [AdminInboxController::class, 'reply'])
+            ->whereNumber('conversation')
+            ->name('messages.support.reply');
     });
 });
 
@@ -128,6 +157,18 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::middleware(['auth', 'landlord.approved'])->group(function () {
     Route::get('/billing/plans', [BillingController::class, 'index'])
         ->name('billing.plans');
+    Route::post('/billing/subscribe', [BillingController::class, 'subscribe'])
+        ->middleware('throttle:5,1')
+        ->name('billing.subscribe');
+    Route::post('/billing/accommodations', [BillingController::class, 'accommodationAccess'])
+        ->middleware('throttle:5,1')
+        ->name('billing.accommodations');
+
+    Route::get('/support', [SupportController::class, 'show'])
+        ->name('support.show');
+    Route::post('/support', [SupportController::class, 'send'])
+        ->middleware('throttle:10,1')
+        ->name('support.send');
 
     Route::get('/properties', [PropertyController::class, 'index'])
         ->name('properties.index');
@@ -155,6 +196,32 @@ Route::middleware(['auth', 'landlord.approved'])->group(function () {
         ->whereNumber('unit')
         ->name('landlord-vacancies.toggle');
 
+    Route::middleware('accommodations.access')->group(function () {
+        Route::get('/accommodations', [AccommodationController::class, 'index'])
+            ->name('accommodations.index');
+        Route::get('/accommodations/create', [AccommodationController::class, 'create'])
+            ->name('accommodations.create');
+        Route::post('/accommodations', [AccommodationController::class, 'store'])
+            ->name('accommodations.store');
+        Route::get('/accommodations/bookings', [AccommodationController::class, 'bookings'])
+            ->name('accommodations.bookings');
+        Route::patch('/accommodations/bookings/{booking}', [AccommodationController::class, 'updateBooking'])
+            ->whereNumber('booking')
+            ->name('accommodations.bookings.update');
+        Route::get('/accommodations/{accommodation}/edit', [AccommodationController::class, 'edit'])
+            ->whereNumber('accommodation')
+            ->name('accommodations.edit');
+        Route::put('/accommodations/{accommodation}', [AccommodationController::class, 'update'])
+            ->whereNumber('accommodation')
+            ->name('accommodations.update');
+        Route::patch('/accommodations/{accommodation}/toggle', [AccommodationController::class, 'toggle'])
+            ->whereNumber('accommodation')
+            ->name('accommodations.toggle');
+        Route::delete('/accommodations/{accommodation}/images/{image}', [AccommodationController::class, 'destroyImage'])
+            ->whereNumber('accommodation')
+            ->whereNumber('image')
+            ->name('accommodations.images.destroy');
+    });
     Route::get('/properties/create', [PropertyController::class, 'create'])
         ->name('properties.create');
 

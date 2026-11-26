@@ -6,6 +6,17 @@
 
 @section('content')
 <section class="page-card">
+    <form method="GET" action="{{ route('landlord-vacancies.index') }}"
+          style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+        <input class="form-control" type="search" name="place" value="{{ $filters['place'] ?? '' }}"
+               placeholder="Filter by place" style="flex:1;min-width:180px">
+        <input class="form-control" type="number" name="min_price" min="0" step="1"
+               value="{{ $filters['min_price'] ?? '' }}" placeholder="Minimum monthly rent" style="width:170px">
+        <input class="form-control" type="number" name="max_price" min="0" step="1"
+               value="{{ $filters['max_price'] ?? '' }}" placeholder="Maximum monthly rent" style="width:170px">
+        <button class="btn btn-primary" type="submit">Filter</button>
+        <a class="btn btn-secondary" href="{{ route('landlord-vacancies.index') }}">Reset</a>
+    </form>
     <div style="overflow-x:auto;">
         <table class="data-table w-full" style="min-width:780px;">
             <thead>

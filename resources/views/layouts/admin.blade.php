@@ -62,6 +62,12 @@
             <a href="{{ route('admin.properties') }}" class="admin-nav-link {{ request()->routeIs('admin.properties') ? 'active' : '' }}">Properties</a>
             <a href="{{ route('admin.listings') }}" class="admin-nav-link {{ request()->routeIs('admin.listings') ? 'active' : '' }}">Property listings</a>
             <a href="{{ route('admin.vacancies') }}" class="admin-nav-link {{ request()->routeIs('admin.vacancies*') ? 'active' : '' }}">Vacancies</a>
+            <a href="{{ route('admin.messages.contact') }}" class="admin-nav-link {{ request()->routeIs('admin.messages.contact*') ? 'active' : '' }}">
+                Contact messages @if($unreadContacts)<span class="admin-badge admin-badge-pending">{{ $unreadContacts }}</span>@endif
+            </a>
+            <a href="{{ route('admin.messages.support') }}" class="admin-nav-link {{ request()->routeIs('admin.messages.support*') ? 'active' : '' }}">
+                Technical support @if($unreadSupport)<span class="admin-badge admin-badge-pending">{{ $unreadSupport }}</span>@endif
+            </a>
         </nav>
     </aside>
     <main class="admin-main">

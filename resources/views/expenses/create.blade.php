@@ -15,6 +15,17 @@
     <form method="POST" action="{{ route('expenses.store') }}" class="space-y-4">
         @csrf
         <label class="block">
+            <span class="text-sm font-semibold">Property (optional)</span>
+            <select name="property_id" class="form-control mt-1">
+                <option value="">General / not property-specific</option>
+                @foreach($properties as $property)
+                    <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
+                        {{ $property->property_name }} · {{ $property->town ?: $property->address }}
+                    </option>
+                @endforeach
+            </select>
+        </label>
+        <label class="block">
             <span class="text-sm font-semibold">Expense date</span>
             <input type="date" name="expense_date" required max="{{ now()->toDateString() }}"
                    value="{{ old('expense_date', now()->toDateString()) }}"

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Landlord;
 use App\Models\PropertyListing;
 use App\Models\Expense;
+use App\Models\Accommodation;
 use App\Models\RentCharge;
 use App\Models\RentPayment;
 use App\Models\Subscription;
@@ -24,6 +25,14 @@ class AuthController extends Controller
     {
         $filters = $request->validate([
             'place' => ['nullable', 'string', 'max:100'],
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => ['nullable', 'numeric', 'gte:min_price'],
+            'property_place' => ['nullable', 'string', 'max:100'],
+            'property_min_price' => ['nullable', 'numeric', 'min:0'],
+            'property_max_price' => ['nullable', 'numeric', 'gte:property_min_price'],
+            'stay_place' => ['nullable', 'string', 'max:100'],
+            'stay_min_price' => ['nullable', 'numeric', 'min:0'],
+            'stay_max_price' => ['nullable', 'numeric', 'gte:stay_min_price'],
         ]);
         $plans = SubscriptionPlan::where('is_active', true)
             ->where('slug', '!=', 'free-trial')
@@ -37,17 +46,46 @@ class AuthController extends Controller
                     ->where('is_active', true)
                     ->where('approval_status', 'approved')))
             ->with(['property', 'images'])
+            ->when(!empty($filters['property_place']), function ($query) use ($filters) {
+                $query->whereHas('property', fn ($propertyQuery) => $propertyQuery
+                    ->where('town', 'like', '%'.$filters['property_place'].'%')
+                    ->orWhere('county', 'like', '%'.$filters['property_place'].'%')
+                    ->orWhere('address', 'like', '%'.$filters['property_place'].'%'));
+            })
+            ->when(isset($filters['property_min_price']), fn ($query) => $query
+                ->where('monthly_rent', '>=', $filters['property_min_price']))
+            ->when(isset($filters['property_max_price']), fn ($query) => $query
+                ->where('monthly_rent', '<=', $filters['property_max_price']))
             ->latest('reviewed_at')
             ->take(6)
             ->get();
         $place = trim($filters['place'] ?? '');
-        $vacancyCards = $vacancyMarketplace->cards($place);
+        $vacancyCards = $vacancyMarketplace->cards(
+            $place,
+            isset($filters['min_price']) ? (float) $filters['min_price'] : null,
+            isset($filters['max_price']) ? (float) $filters['max_price'] : null
+        );
+        $accommodations = Accommodation::where('status', 'published')
+            ->with('images')
+            ->when(!empty($filters['stay_place']), fn ($query) => $query
+                ->where(function ($locationQuery) use ($filters) {
+                    $locationQuery->where('place_name', 'like', '%'.$filters['stay_place'].'%')
+                        ->orWhere('address', 'like', '%'.$filters['stay_place'].'%');
+                }))
+            ->when(isset($filters['stay_min_price']), fn ($query) => $query
+                ->where('price_per_night', '>=', $filters['stay_min_price']))
+            ->when(isset($filters['stay_max_price']), fn ($query) => $query
+                ->where('price_per_night', '<=', $filters['stay_max_price']))
+            ->latest('published_at')
+            ->take(6)
+            ->get();
 
         return view('welcome', compact(
             'plans',
             'publicListings',
             'vacancyCards',
-            'place'
+            'place',
+            'accommodations'
         ));
     }
 

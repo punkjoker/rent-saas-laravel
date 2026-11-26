@@ -50,26 +50,40 @@ class PropertyListingController extends Controller
     {
         $landlordId = $this->landlordId();
         $validated = $request->validate($this->rules(true));
-        $property = Property::where('landlord_id', $landlordId)
-            ->findOrFail($validated['property_id']);
-
-        $slug = Str::slug($validated['title']).'-'.$property->id.'-'.Str::lower(Str::random(6));
         $storedPaths = [];
 
         try {
             DB::transaction(function () use (
                 $validated,
-                $property,
-                $slug,
+                $landlordId,
                 $request,
                 &$storedPaths
             ) {
+                if (! empty($validated['property_id'])) {
+                    $property = Property::where('landlord_id', $landlordId)
+                        ->findOrFail($validated['property_id']);
+                } else {
+                    $property = Property::create([
+                        'landlord_id' => $landlordId,
+                        'property_name' => trim($validated['property_name']),
+                        'property_type' => 'apartment',
+                        'address' => $validated['property_address'] ?? null,
+                        'town' => $validated['property_town'] ?? null,
+                        'unit_prefix' => 'HSE',
+                        'default_rent' => $validated['monthly_rent'],
+                        'default_deposit' => 0,
+                        'default_garbage_fee' => 0,
+                        'is_active' => true,
+                    ]);
+                }
+
                 if ($property->listing()->exists()) {
                     throw ValidationException::withMessages([
                         'property_id' => 'An advertisement already exists for this property.',
                     ]);
                 }
 
+                $slug = Str::slug($validated['title']).'-'.$property->id.'-'.Str::lower(Str::random(6));
                 $listing = $property->listing()->create([
                     'slug' => $slug,
                     'title' => $validated['title'],
@@ -163,7 +177,16 @@ class PropertyListingController extends Controller
     {
         return [
             'property_id' => $creating
-                ? ['required', 'integer']
+                ? ['nullable', 'required_without:property_name', 'integer']
+                : ['prohibited'],
+            'property_name' => $creating
+                ? ['nullable', 'required_without:property_id', 'string', 'max:255']
+                : ['prohibited'],
+            'property_address' => $creating
+                ? ['nullable', 'string', 'max:255']
+                : ['prohibited'],
+            'property_town' => $creating
+                ? ['nullable', 'string', 'max:255']
                 : ['prohibited'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
@@ -192,7 +215,7 @@ class PropertyListingController extends Controller
         $sortOrder = (int) $listing->images()->max('sort_order') + 1;
         foreach ($request->file('images', []) as $image) {
             $path = $image->storePublicly('property-listings', 'public');
-            if (!$path) {
+            if (! $path) {
                 throw new RuntimeException('Failed to store a property listing photo.');
             }
 

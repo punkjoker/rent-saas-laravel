@@ -8,7 +8,7 @@
 <style>
     .report-filter-form {
         display: grid;
-        grid-template-columns: minmax(180px, 1fr) minmax(140px, .7fr) auto auto;
+        grid-template-columns: minmax(180px, 1fr) minmax(140px, .7fr) minmax(180px, .9fr) auto auto;
         align-items: end;
         gap: 12px;
     }
@@ -435,9 +435,56 @@
                     @endforeach
                 </select>
             </label>
+            <label>
+                Apartment
+                <select name="property_id" class="form-control">
+                    <option value="">All apartments</option>
+                    @foreach($properties as $property)
+                        <option value="{{ $property->id }}" @selected($propertyId === $property->id)>
+                            {{ $property->property_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </label>
             <button type="submit" class="btn btn-primary">Apply Filters</button>
             <a href="{{ route('reports.index') }}" class="btn btn-secondary">Reset</a>
         </form>
+    </section>
+
+    <section>
+        <div class="report-chart-heading" style="margin:0 0 10px">
+            <div>
+                <h2>Accommodation performance</h2>
+                <p>Confirmed booking revenue is estimated from nightly rate × booked nights. The projection extrapolates confirmed stay revenue accrued so far across the selected period.</p>
+            </div>
+        </div>
+        <div class="report-kpi-grid">
+            <article class="page-card report-kpi">
+                <div class="report-kpi-heading">Published stays</div>
+                <strong class="report-kpi-value">{{ number_format($accommodationReport['published']) }}</strong>
+                <p class="report-kpi-note">{{ number_format($accommodationReport['listings']) }} total listings</p>
+            </article>
+            <article class="page-card report-kpi">
+                <div class="report-kpi-heading">Confirmed booking revenue</div>
+                <strong class="report-kpi-value">KES {{ number_format($accommodationReport['confirmed_revenue'], 2) }}</strong>
+                <p class="report-kpi-note">{{ number_format($accommodationReport['confirmed_bookings']) }} confirmed bookings · {{ number_format($accommodationReport['confirmed_nights']) }} booked nights</p>
+            </article>
+            <article class="page-card report-kpi">
+                <div class="report-kpi-heading">Revenue projection</div>
+                <strong class="report-kpi-value">KES {{ number_format($accommodationReport['projected_revenue'], 2) }}</strong>
+                <p class="report-kpi-note">Linear estimate from {{ $accommodationReport['projection_days'] }} elapsed days</p>
+            </article>
+            <article class="page-card report-kpi">
+                <div class="report-kpi-heading">Pending booking requests</div>
+                <strong class="report-kpi-value">{{ number_format($accommodationReport['pending_bookings']) }}</strong>
+                <p class="report-kpi-note">Created during {{ $periodLabel }}</p>
+            </article>
+            <article class="page-card report-kpi">
+                <div class="report-kpi-heading">Accommodation listing views</div>
+                <strong class="report-kpi-value">{{ number_format($accommodationReport['clicks']) }}</strong>
+                <p class="report-kpi-note">Cumulative public detail-page views</p>
+            </article>
+        </div>
     </section>
 
     <section class="report-kpi-grid" aria-label="Summary for {{ $periodLabel }}">

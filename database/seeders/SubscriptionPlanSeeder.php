@@ -122,6 +122,23 @@ class SubscriptionPlanSeeder extends Seeder
                     'Reports',
                 ],
             ],
+            [
+                'name' => 'Accommodations',
+                'slug' => 'accommodations',
+                'description' => 'Full access to Pango property management and the accommodation marketplace.',
+                'price' => 4000,
+                'tenant_limit' => null,
+                'property_limit' => null,
+                'duration_days' => 30,
+                'currency' => 'KES',
+                'sort_order' => 6,
+                'features' => [
+                    'Full Pango property management',
+                    'Accommodation listings and bookings',
+                    'Accommodation reports and projections',
+                    'Technical support',
+                ],
+            ],
         ];
 
         foreach ($plans as $plan) {
